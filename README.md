@@ -43,6 +43,7 @@
 
 - **事件系统**：
   - 生命周期事件（plugin:registered、plugin:installed、plugin:activated 等）
+  - 应用级别事件钩子（onInit、onRequest、onResponse、onBuild、onStart、onStop、onShutdown）
   - 自定义事件支持
   - 事件发布/订阅模式
   - 多个监听器支持
@@ -305,6 +306,10 @@ export default plugin; // 或 export const plugin = { ... };
 
 ### 事件系统
 
+#### 插件生命周期事件
+
+插件管理器提供生命周期事件，可以通过 `on` 方法监听：
+
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
 
@@ -332,6 +337,91 @@ pluginManager.register(authPlugin);
 await pluginManager.install("auth-plugin");
 await pluginManager.activate("auth-plugin");
 ```
+
+#### 应用级别事件钩子
+
+插件可以实现应用级别的事件钩子，响应应用生命周期和请求处理事件：
+
+```typescript
+import type { Plugin } from "@dreamer/plugin";
+import type { HttpContext } from "@dreamer/server";
+import type { ServiceContainer } from "@dreamer/service";
+
+const myPlugin: Plugin = {
+  name: "my-plugin",
+  version: "1.0.0",
+
+  // 应用初始化完成（所有插件安装和激活之后）
+  async onInit(container: ServiceContainer) {
+    console.log("应用已初始化");
+  },
+
+  // 应用启动时
+  async onStart(container: ServiceContainer) {
+    console.log("应用已启动");
+  },
+
+  // 请求处理前（可以访问 req, res）
+  async onRequest(ctx: HttpContext, container: ServiceContainer) {
+    console.log(`收到请求: ${ctx.method} ${ctx.path}`);
+    // 可以访问 ctx.request, ctx.response, ctx.headers 等
+  },
+
+  // 请求处理完成后（可以访问 req, res）
+  async onResponse(ctx: HttpContext, container: ServiceContainer) {
+    console.log(`请求完成: ${ctx.method} ${ctx.path}`);
+    // 可以访问 ctx.response 等
+  },
+
+  // 构建开始前
+  async onBuild(
+    options: { mode: "dev" | "prod"; target?: "client" | "server" },
+    container: ServiceContainer,
+  ) {
+    console.log(`开始构建: ${options.mode}`);
+  },
+
+  // 构建完成后
+  async onBuildComplete(
+    result: {
+      outputFiles?: string[];
+      errors?: unknown[];
+      warnings?: unknown[];
+    },
+    container: ServiceContainer,
+  ) {
+    console.log(`构建完成: ${result.outputFiles?.length || 0} 个文件`);
+  },
+
+  // 应用停止时
+  async onStop(container: ServiceContainer) {
+    console.log("应用已停止");
+  },
+
+  // 应用关闭时
+  async onShutdown(container: ServiceContainer) {
+    console.log("应用已关闭");
+  },
+};
+```
+
+**支持的事件钩子**：
+
+- **onInit**: 应用初始化完成时调用（在所有插件安装和激活之后）
+- **onStart**: 应用启动时调用
+- **onRequest**: 请求处理前调用（可以访问 req, res）
+- **onResponse**: 请求处理完成后调用（可以访问 req, res）
+- **onBuild**: 构建开始前调用
+- **onBuildComplete**: 构建完成后调用
+- **onStop**: 应用停止时调用
+- **onShutdown**: 应用关闭时调用
+
+**注意事项**：
+
+1. 只有**已激活**的插件才会响应应用级别事件
+2. 事件钩子中的错误不会影响应用运行，会被捕获并记录
+3. `onRequest` 和 `onResponse` 通过中间件触发，确保在请求处理流程中正确执行
+4. 所有事件钩子都是可选的，插件可以选择性地实现需要的事件
 
 ### 热加载（开发环境）
 
@@ -751,6 +841,16 @@ interface Plugin<TConfig extends Record<string, unknown> = Record<string, unknow
   activate?: (container: ServiceContainer) => Promise<void> | void; // 激活钩子（可选）
   deactivate?: () => Promise<void> | void;         // 停用钩子（可选）
   uninstall?: () => Promise<void> | void;         // 卸载钩子（可选）
+
+  // 应用级别事件钩子（可选）
+  onInit?: (container: ServiceContainer) => Promise<void> | void; // 应用初始化完成
+  onStart?: (container: ServiceContainer) => Promise<void> | void; // 应用启动时
+  onStop?: (container: ServiceContainer) => Promise<void> | void; // 应用停止时
+  onShutdown?: (container: ServiceContainer) => Promise<void> | void; // 应用关闭时
+  onRequest?: (ctx: HttpContext, container: ServiceContainer) => Promise<void> | void; // 请求处理前
+  onResponse?: (ctx: HttpContext, container: ServiceContainer) => Promise<void> | void; // 请求处理完成后
+  onBuild?: (options: { mode: "dev" | "prod"; target?: "client" | "server" }, container: ServiceContainer) => Promise<void> | void; // 构建开始前
+  onBuildComplete?: (result: { outputFiles?: string[]; errors?: unknown[]; warnings?: unknown[] }, container: ServiceContainer) => Promise<void> | void; // 构建完成后
 }
 ```
 
@@ -765,6 +865,14 @@ interface Plugin<TConfig extends Record<string, unknown> = Record<string, unknow
 - `activate?: (container: ServiceContainer) => Promise<void> | void` - 激活钩子（可选，激活时调用）
 - `deactivate?: () => Promise<void> | void` - 停用钩子（可选，停用时调用）
 - `uninstall?: () => Promise<void> | void` - 卸载钩子（可选，卸载时调用）
+- `onInit?: (container: ServiceContainer) => Promise<void> | void` - 应用初始化完成钩子（可选）
+- `onStart?: (container: ServiceContainer) => Promise<void> | void` - 应用启动钩子（可选）
+- `onStop?: (container: ServiceContainer) => Promise<void> | void` - 应用停止钩子（可选）
+- `onShutdown?: (container: ServiceContainer) => Promise<void> | void` - 应用关闭钩子（可选）
+- `onRequest?: (ctx: HttpContext, container: ServiceContainer) => Promise<void> | void` - 请求处理前钩子（可选，可访问 req, res）
+- `onResponse?: (ctx: HttpContext, container: ServiceContainer) => Promise<void> | void` - 请求处理完成后钩子（可选，可访问 req, res）
+- `onBuild?: (options: { mode: "dev" | "prod"; target?: "client" | "server" }, container: ServiceContainer) => Promise<void> | void` - 构建开始前钩子（可选）
+- `onBuildComplete?: (result: { outputFiles?: string[]; errors?: unknown[]; warnings?: unknown[] }, container: ServiceContainer) => Promise<void> | void` - 构建完成后钩子（可选）
 
 ### PluginState 类型
 

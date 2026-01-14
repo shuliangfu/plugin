@@ -22,11 +22,74 @@ export type ConfigValidator = (
 ) => boolean;
 
 /**
+ * 应用级别的事件钩子类型
+ */
+export interface AppEventHooks {
+  /** 应用初始化完成时调用（在所有插件安装和激活之后） */
+  onInit?: (container: ServiceContainer) => Promise<void> | void;
+  /** 请求处理前调用（可以访问 req, res） */
+  onRequest?: (
+    ctx: {
+      request: Request;
+      response?: Response;
+      path: string;
+      method: string;
+      url: URL;
+      headers: Headers;
+      params?: Record<string, string>;
+      query?: Record<string, string>;
+      body?: unknown;
+      [key: string]: unknown;
+    },
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  /** 请求处理完成后调用（可以访问 req, res） */
+  onResponse?: (
+    ctx: {
+      request: Request;
+      response?: Response;
+      path: string;
+      method: string;
+      url: URL;
+      headers: Headers;
+      params?: Record<string, string>;
+      query?: Record<string, string>;
+      body?: unknown;
+      [key: string]: unknown;
+    },
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  /** 构建开始前调用 */
+  onBuild?: (
+    options: {
+      mode: "dev" | "prod";
+      target?: "client" | "server";
+    },
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  /** 构建完成后调用 */
+  onBuildComplete?: (
+    result: {
+      outputFiles?: string[];
+      errors?: unknown[];
+      warnings?: unknown[];
+    },
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  /** 应用启动时调用 */
+  onStart?: (container: ServiceContainer) => Promise<void> | void;
+  /** 应用停止时调用 */
+  onStop?: (container: ServiceContainer) => Promise<void> | void;
+  /** 应用关闭时调用 */
+  onShutdown?: (container: ServiceContainer) => Promise<void> | void;
+}
+
+/**
  * 插件接口
  *
  * 定义插件的基本结构和生命周期钩子
  */
-export interface Plugin {
+export interface Plugin extends AppEventHooks {
   /** 插件名称（唯一标识） */
   name: string;
   /** 插件版本 */
