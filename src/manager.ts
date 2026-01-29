@@ -16,11 +16,19 @@ import { EventEmitter } from "./event-emitter.ts";
 import { HotReloadManager } from "./hot-reload.ts";
 import { loadPluginFromFile } from "./loader.ts";
 import type {
+  BuildOptions,
+  BuildResult,
+  HealthStatus,
   Plugin,
   PluginDebugInfo,
   PluginManagerOptions,
   PluginState,
+  RegisterOptions,
+  RequestContext,
   ResourceLimits,
+  RouteDefinition,
+  ScheduleContext,
+  WebSocketContext,
 } from "./types.ts";
 
 /**
@@ -92,11 +100,33 @@ export class PluginManager {
    * 注册插件
    *
    * @param plugin 插件对象
-   * @throws 如果插件名称已存在，抛出错误
+   * @param options 注册选项
+   * @param options.replace 是否替换已存在的同名插件（默认：false）
+   * @throws 如果插件名称已存在且 replace 为 false，抛出错误
+   *
+   * @example
+   * ```typescript
+   * // 默认：如果已存在则抛出错误
+   * manager.register(myPlugin);
+   *
+   * // 替换已存在的插件（用于热重载）
+   * manager.register(myPlugin, { replace: true });
+   * ```
    */
-  register(plugin: Plugin): void {
+  register(plugin: Plugin, options: RegisterOptions = {}): void {
+    const { replace = false } = options;
+
     if (this.plugins.has(plugin.name)) {
-      throw new Error(`插件 "${plugin.name}" 已注册`);
+      if (!replace) {
+        throw new Error(`插件 "${plugin.name}" 已注册`);
+      }
+      // 替换模式：先清理旧插件的状态
+      this.pluginStates.delete(plugin.name);
+      this.pluginServices.delete(plugin.name);
+      this.pluginConfigs.delete(plugin.name);
+      this.pluginErrors.delete(plugin.name);
+      // 触发替换事件
+      this.eventEmitter.emit("plugin:replaced", plugin.name, plugin);
     }
 
     this.plugins.set(plugin.name, plugin);
@@ -104,6 +134,117 @@ export class PluginManager {
 
     // 触发注册事件
     this.eventEmitter.emit("plugin:registered", plugin.name, plugin);
+  }
+
+  /**
+   * 添加并激活插件（便捷方法）
+   *
+   * 自动完成注册、安装、激活流程
+   *
+   * @param plugin 插件对象
+   *
+   * @example
+   * ```typescript
+   * await pluginManager.use(loggerPlugin);
+   * await pluginManager.use(authPlugin);
+   * ```
+   */
+  async use(plugin: Plugin): Promise<void> {
+    // 如果插件已注册，跳过注册
+    if (!this.plugins.has(plugin.name)) {
+      this.register(plugin);
+    }
+
+    // 安装（会自动处理依赖）
+    const state = this.pluginStates.get(plugin.name);
+    if (state === "registered") {
+      await this.install(plugin.name);
+    }
+
+    // 激活
+    const newState = this.pluginStates.get(plugin.name);
+    if (newState === "installed" || newState === "inactive") {
+      await this.activate(plugin.name);
+    }
+  }
+
+  /**
+   * 批量添加并启动所有插件（便捷方法）
+   *
+   * 按依赖顺序安装和激活所有已注册但未激活的插件，
+   * 然后触发 onInit 事件
+   *
+   * @example
+   * ```typescript
+   * pluginManager.register(loggerPlugin);
+   * pluginManager.register(authPlugin);
+   * await pluginManager.bootstrap();
+   * ```
+   */
+  async bootstrap(): Promise<void> {
+    // 获取所有已注册的插件
+    const plugins = this.getRegisteredPlugins();
+
+    // 按依赖顺序安装
+    for (const name of plugins) {
+      const state = this.pluginStates.get(name);
+      if (state === "registered") {
+        await this.install(name);
+      }
+    }
+
+    // 按依赖顺序激活
+    for (const name of plugins) {
+      const state = this.pluginStates.get(name);
+      if (state === "installed") {
+        await this.activate(name);
+      }
+    }
+
+    // 触发初始化事件
+    await this.triggerInit();
+  }
+
+  /**
+   * 优雅关闭所有插件（便捷方法）
+   *
+   * 触发 onStop 和 onShutdown，然后停用和卸载所有插件
+   *
+   * @example
+   * ```typescript
+   * await pluginManager.shutdown();
+   * ```
+   */
+  async shutdown(): Promise<void> {
+    // 触发停止事件
+    await this.triggerStop();
+
+    // 触发关闭事件
+    await this.triggerShutdown();
+
+    // 获取所有已激活的插件（逆序）
+    const activePlugins = this.getActivePlugins().reverse();
+
+    // 停用所有插件
+    for (const plugin of activePlugins) {
+      try {
+        await this.deactivate(plugin.name);
+      } catch {
+        // 忽略停用错误
+      }
+    }
+
+    // 卸载所有插件
+    for (const name of this.getRegisteredPlugins()) {
+      const state = this.pluginStates.get(name);
+      if (state !== "uninstalled" && state !== "registered") {
+        try {
+          await this.uninstall(name);
+        } catch {
+          // 忽略卸载错误
+        }
+      }
+    }
   }
 
   /**
@@ -190,29 +331,12 @@ export class PluginManager {
    */
   private async installPlugin(name: string): Promise<void> {
     const plugin = this.plugins.get(name)!;
-    const services = new Set<string>();
-
-    // 记录安装前的服务列表
-    const beforeServices = new Set(this.container.getRegisteredServices());
-
-    // 执行安装钩子
-    if (plugin.install) {
-      await plugin.install(this.container);
-    }
-
-    // 记录新注册的服务
-    const afterServices = new Set(this.container.getRegisteredServices());
-    for (const serviceName of afterServices) {
-      if (!beforeServices.has(serviceName)) {
-        services.add(serviceName);
-      }
-    }
-
-    // 保存插件注册的服务列表
-    this.pluginServices.set(name, services);
 
     // 更新状态
     this.pluginStates.set(name, "installed");
+
+    // 初始化插件服务集合（用于调试信息）
+    this.pluginServices.set(name, new Set<string>());
 
     // 触发安装事件
     this.eventEmitter.emit("plugin:installed", name, plugin);
@@ -229,7 +353,7 @@ export class PluginManager {
    * @param name 插件名称
    * @throws 如果插件不存在或未安装，抛出错误
    */
-  async activate(name: string): Promise<void> {
+  activate(name: string): void {
     const plugin = this.plugins.get(name);
     if (!plugin) {
       throw new Error(`插件 "${name}" 未注册`);
@@ -242,42 +366,27 @@ export class PluginManager {
       );
     }
 
-    try {
-      // 检查依赖插件是否已激活
-      if (plugin.dependencies) {
-        for (const depName of plugin.dependencies) {
-          const depState = this.pluginStates.get(depName);
-          // 只有当状态明确不是 "active" 时才抛出错误
-          // 如果状态是 undefined 或其他值，也应该抛出错误
-          if (!depState || depState !== "active") {
-            const stateStr = depState || "undefined";
-            throw new Error(
-              `插件 "${name}" 的依赖 "${depName}" 未激活（当前状态: ${stateStr}）`,
-            );
-          }
+    // 检查依赖插件是否已激活
+    if (plugin.dependencies) {
+      for (const depName of plugin.dependencies) {
+        const depState = this.pluginStates.get(depName);
+        // 只有当状态明确不是 "active" 时才抛出错误
+        if (!depState || depState !== "active") {
+          const stateStr = depState || "undefined";
+          throw new Error(
+            `插件 "${name}" 的依赖 "${depName}" 未激活（当前状态: ${stateStr}）`,
+          );
         }
       }
-
-      // 执行激活钩子
-      if (plugin.activate) {
-        await plugin.activate(this.container);
-      }
-
-      // 更新状态
-      this.pluginStates.set(name, "active");
-
-      // 触发激活事件
-      this.eventEmitter.emit("plugin:activated", name, plugin);
-      // 清除之前的错误
-      this.pluginErrors.delete(name);
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.pluginErrors.set(name, err);
-      this.eventEmitter.emit("plugin:error", name, err);
-      if (!this.options.continueOnError) {
-        throw error;
-      }
     }
+
+    // 更新状态
+    this.pluginStates.set(name, "active");
+
+    // 触发激活事件
+    this.eventEmitter.emit("plugin:activated", name, plugin);
+    // 清除之前的错误
+    this.pluginErrors.delete(name);
   }
 
   /**
@@ -286,7 +395,7 @@ export class PluginManager {
    * @param name 插件名称
    * @throws 如果插件不存在或未激活，抛出错误
    */
-  async deactivate(name: string): Promise<void> {
+  deactivate(name: string): void {
     const plugin = this.plugins.get(name);
     if (!plugin) {
       throw new Error(`插件 "${name}" 未注册`);
@@ -299,27 +408,13 @@ export class PluginManager {
       );
     }
 
-    try {
-      // 执行停用钩子
-      if (plugin.deactivate) {
-        await plugin.deactivate();
-      }
+    // 更新状态
+    this.pluginStates.set(name, "inactive");
 
-      // 更新状态
-      this.pluginStates.set(name, "inactive");
-
-      // 触发停用事件
-      this.eventEmitter.emit("plugin:deactivated", name, plugin);
-      // 清除之前的错误
-      this.pluginErrors.delete(name);
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.pluginErrors.set(name, err);
-      this.eventEmitter.emit("plugin:error", name, err);
-      if (!this.options.continueOnError) {
-        throw error;
-      }
-    }
+    // 触发停用事件
+    this.eventEmitter.emit("plugin:deactivated", name, plugin);
+    // 清除之前的错误
+    this.pluginErrors.delete(name);
   }
 
   /**
@@ -339,42 +434,22 @@ export class PluginManager {
       return; // 已经卸载，无需重复操作
     }
 
-    try {
-      // 如果插件已激活，先停用
-      if (currentState === "active") {
-        await this.deactivate(name);
-      }
-
-      // 执行卸载钩子
-      if (plugin.uninstall) {
-        await plugin.uninstall();
-      }
-
-      // 移除插件注册的服务
-      const services = this.pluginServices.get(name);
-      if (services) {
-        for (const serviceName of services) {
-          this.container.remove(serviceName);
-        }
-        this.pluginServices.delete(name);
-      }
-
-      // 更新状态
-      this.pluginStates.set(name, "uninstalled");
-
-      // 触发卸载事件
-      this.eventEmitter.emit("plugin:uninstalled", name, plugin);
-      // 清除错误和配置
-      this.pluginErrors.delete(name);
-      this.pluginConfigs.delete(name);
-    } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.pluginErrors.set(name, err);
-      this.eventEmitter.emit("plugin:error", name, err);
-      if (!this.options.continueOnError) {
-        throw error;
-      }
+    // 如果插件已激活，先停用
+    if (currentState === "active") {
+      await this.deactivate(name);
     }
+
+    // 清理插件服务记录
+    this.pluginServices.delete(name);
+
+    // 更新状态
+    this.pluginStates.set(name, "uninstalled");
+
+    // 触发卸载事件
+    this.eventEmitter.emit("plugin:uninstalled", name, plugin);
+    // 清除错误和配置
+    this.pluginErrors.delete(name);
+    this.pluginConfigs.delete(name);
   }
 
   /**
@@ -745,5 +820,585 @@ export class PluginManager {
     this.pluginConfigs.clear();
     this.pluginErrors.clear();
     this.eventEmitter.removeAllListeners();
+  }
+
+  // ==================== 应用级别事件钩子触发方法 ====================
+
+  /**
+   * 获取所有已激活的插件
+   *
+   * @returns 已激活的插件数组
+   */
+  private getActivePlugins(): Plugin[] {
+    const activePlugins: Plugin[] = [];
+    for (const [name, state] of this.pluginStates.entries()) {
+      if (state === "active") {
+        const plugin = this.plugins.get(name);
+        if (plugin) {
+          activePlugins.push(plugin);
+        }
+      }
+    }
+    return activePlugins;
+  }
+
+  /**
+   * 触发 onInit 钩子
+   * 应在所有插件安装和激活完成后调用
+   *
+   * @example
+   * ```typescript
+   * // 安装并激活所有插件后
+   * await pluginManager.triggerInit();
+   * ```
+   */
+  async triggerInit(): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onInit) {
+        try {
+          await plugin.onInit(this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    // 触发内部事件
+    this.eventEmitter.emit("app:init");
+  }
+
+  /**
+   * 触发 onStart 钩子
+   * 应在应用服务器开始监听时调用
+   *
+   * @example
+   * ```typescript
+   * server.listen(3000, async () => {
+   *   await pluginManager.triggerStart();
+   * });
+   * ```
+   */
+  async triggerStart(): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onStart) {
+        try {
+          await plugin.onStart(this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:start");
+  }
+
+  /**
+   * 触发 onStop 钩子
+   * 应在应用优雅停止时调用
+   *
+   * @example
+   * ```typescript
+   * process.on('SIGTERM', async () => {
+   *   await pluginManager.triggerStop();
+   *   server.close();
+   * });
+   * ```
+   */
+  async triggerStop(): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    // 逆序执行，后启动的先停止
+    for (const plugin of activePlugins.reverse()) {
+      if (plugin.onStop) {
+        try {
+          await plugin.onStop(this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:stop");
+  }
+
+  /**
+   * 触发 onShutdown 钩子
+   * 应在应用完全关闭前调用（最终清理）
+   *
+   * @example
+   * ```typescript
+   * process.on('exit', async () => {
+   *   await pluginManager.triggerShutdown();
+   * });
+   * ```
+   */
+  async triggerShutdown(): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    // 逆序执行
+    for (const plugin of activePlugins.reverse()) {
+      if (plugin.onShutdown) {
+        try {
+          await plugin.onShutdown(this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          // shutdown 时不抛出错误，确保所有插件都有机会清理
+        }
+      }
+    }
+    this.eventEmitter.emit("app:shutdown");
+  }
+
+  /**
+   * 触发 onRequest 钩子
+   * 应在每个 HTTP 请求处理前调用
+   *
+   * @param ctx 请求上下文
+   * @returns 如果某个插件返回了 Response，则返回该 Response；否则返回 undefined
+   *
+   * @example
+   * ```typescript
+   * server.use(async (req, res, next) => {
+   *   const ctx = { request: req, path: req.url, method: req.method, ... };
+   *   const response = await pluginManager.triggerRequest(ctx);
+   *   if (response) {
+   *     return response; // 插件已处理请求
+   *   }
+   *   next();
+   * });
+   * ```
+   */
+  async triggerRequest(ctx: RequestContext): Promise<Response | undefined> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onRequest) {
+        try {
+          const result = await plugin.onRequest(ctx, this.container);
+          // 如果插件返回了 Response，直接返回（跳过后续处理）
+          if (result instanceof Response) {
+            return result;
+          }
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:request", ctx);
+    return undefined;
+  }
+
+  /**
+   * 触发 onResponse 钩子
+   * 应在每个 HTTP 请求处理完成后调用
+   *
+   * @param ctx 请求上下文（包含响应）
+   *
+   * @example
+   * ```typescript
+   * const response = await handler(request);
+   * ctx.response = response;
+   * await pluginManager.triggerResponse(ctx);
+   * return ctx.response;
+   * ```
+   */
+  async triggerResponse(ctx: RequestContext): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onResponse) {
+        try {
+          await plugin.onResponse(ctx, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:response", ctx);
+  }
+
+  /**
+   * 触发 onError 钩子
+   * 应在发生错误时调用
+   *
+   * @param error 错误对象
+   * @param ctx 请求上下文（可选，如果是请求相关的错误）
+   * @returns 如果某个插件返回了 Response，则返回该 Response；否则返回 undefined
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   await handler(request);
+   * } catch (error) {
+   *   const response = await pluginManager.triggerError(error, ctx);
+   *   if (response) return response;
+   *   // 默认错误处理
+   * }
+   * ```
+   */
+  async triggerError(
+    error: Error,
+    ctx?: RequestContext,
+  ): Promise<Response | undefined> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onError) {
+        try {
+          const result = await plugin.onError(error, ctx, this.container);
+          if (result instanceof Response) {
+            return result;
+          }
+        } catch (hookError) {
+          // 错误钩子本身出错，记录但不抛出
+          const err = hookError instanceof Error
+            ? hookError
+            : new Error(String(hookError));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+        }
+      }
+    }
+    this.eventEmitter.emit("app:error", error, ctx);
+    return undefined;
+  }
+
+  /**
+   * 触发 onRoute 钩子
+   * 应在路由注册时调用，允许插件动态修改路由
+   *
+   * @param routes 初始路由列表
+   * @returns 修改后的路由列表
+   *
+   * @example
+   * ```typescript
+   * let routes = [
+   *   { path: '/api/users', method: 'GET', handler: ... },
+   * ];
+   * routes = await pluginManager.triggerRoute(routes);
+   * // 注册最终的路由
+   * ```
+   */
+  async triggerRoute(routes: RouteDefinition[]): Promise<RouteDefinition[]> {
+    let currentRoutes = [...routes];
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onRoute) {
+        try {
+          currentRoutes = await plugin.onRoute(currentRoutes, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:route", currentRoutes);
+    return currentRoutes;
+  }
+
+  /**
+   * 触发 onBuild 钩子
+   * 应在构建开始前调用
+   *
+   * @param options 构建选项
+   *
+   * @example
+   * ```typescript
+   * await pluginManager.triggerBuild({ mode: 'prod', target: 'client' });
+   * await esbuild.build(config);
+   * ```
+   */
+  async triggerBuild(options: BuildOptions): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onBuild) {
+        try {
+          await plugin.onBuild(options, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:build", options);
+  }
+
+  /**
+   * 触发 onBuildComplete 钩子
+   * 应在构建完成后调用
+   *
+   * @param result 构建结果
+   *
+   * @example
+   * ```typescript
+   * const result = await esbuild.build(config);
+   * await pluginManager.triggerBuildComplete({
+   *   outputFiles: result.outputFiles,
+   *   duration: Date.now() - startTime,
+   * });
+   * ```
+   */
+  async triggerBuildComplete(result: BuildResult): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onBuildComplete) {
+        try {
+          await plugin.onBuildComplete(result, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:build:complete", result);
+  }
+
+  /**
+   * 触发 onWebSocket 钩子
+   * 应在 WebSocket 连接建立时调用
+   *
+   * @param ctx WebSocket 上下文
+   *
+   * @example
+   * ```typescript
+   * wss.on('connection', async (socket, request) => {
+   *   await pluginManager.triggerWebSocket({ socket, request });
+   * });
+   * ```
+   */
+  async triggerWebSocket(ctx: WebSocketContext): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onWebSocket) {
+        try {
+          await plugin.onWebSocket(ctx, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:websocket", ctx);
+  }
+
+  /**
+   * 触发 onWebSocketClose 钩子
+   * 应在 WebSocket 连接关闭时调用
+   *
+   * @param ctx WebSocket 上下文
+   *
+   * @example
+   * ```typescript
+   * socket.on('close', async () => {
+   *   await pluginManager.triggerWebSocketClose({ socket, request });
+   * });
+   * ```
+   */
+  async triggerWebSocketClose(ctx: WebSocketContext): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onWebSocketClose) {
+        try {
+          await plugin.onWebSocketClose(ctx, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:websocket:close", ctx);
+  }
+
+  /**
+   * 触发 onSchedule 钩子
+   * 应在定时任务触发时调用
+   *
+   * @param ctx 定时任务上下文
+   *
+   * @example
+   * ```typescript
+   * cron.schedule('0 * * * *', async () => {
+   *   await pluginManager.triggerSchedule({
+   *     taskName: 'hourly-cleanup',
+   *     schedule: '0 * * * *',
+   *   });
+   * });
+   * ```
+   */
+  async triggerSchedule(ctx: ScheduleContext): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onSchedule) {
+        try {
+          await plugin.onSchedule(ctx, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          if (!this.options.continueOnError) {
+            throw error;
+          }
+        }
+      }
+    }
+    this.eventEmitter.emit("app:schedule", ctx);
+  }
+
+  /**
+   * 触发 onHealthCheck 钩子
+   * 应在健康检查端点被调用时触发
+   *
+   * @returns 聚合的健康状态
+   *
+   * @example
+   * ```typescript
+   * app.get('/health', async (req, res) => {
+   *   const status = await pluginManager.triggerHealthCheck();
+   *   res.json(status);
+   * });
+   * ```
+   */
+  async triggerHealthCheck(): Promise<HealthStatus> {
+    const checks: Record<
+      string,
+      { status: "pass" | "fail" | "warn"; message?: string; duration?: number }
+    > = {};
+    let overallStatus: "healthy" | "unhealthy" | "degraded" = "healthy";
+
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onHealthCheck) {
+        const startTime = Date.now();
+        try {
+          const result = await plugin.onHealthCheck(this.container);
+          const duration = Date.now() - startTime;
+
+          // 记录插件的健康状态
+          if (result.checks) {
+            for (
+              const [checkName, checkResult] of Object.entries(
+                result.checks,
+              )
+            ) {
+              checks[`${plugin.name}:${checkName}`] = {
+                ...checkResult,
+                duration: checkResult.duration ?? duration,
+              };
+            }
+          } else {
+            // 如果插件没有详细的 checks，用整体状态
+            checks[plugin.name] = {
+              status: result.status === "healthy"
+                ? "pass"
+                : result.status === "degraded"
+                ? "warn"
+                : "fail",
+              duration,
+            };
+          }
+
+          // 更新整体状态
+          if (result.status === "unhealthy") {
+            overallStatus = "unhealthy";
+          } else if (
+            result.status === "degraded" && overallStatus === "healthy"
+          ) {
+            overallStatus = "degraded";
+          }
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          const err = error instanceof Error ? error : new Error(String(error));
+          checks[plugin.name] = {
+            status: "fail",
+            message: err.message,
+            duration,
+          };
+          overallStatus = "unhealthy";
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+        }
+      }
+    }
+
+    const healthStatus: HealthStatus = {
+      status: overallStatus,
+      checks,
+      timestamp: Date.now(),
+    };
+
+    this.eventEmitter.emit("app:healthcheck", healthStatus);
+    return healthStatus;
+  }
+
+  /**
+   * 触发 onHotReload 钩子
+   * 应在文件热重载完成后调用（仅开发环境）
+   *
+   * @param changedFiles 变更的文件列表
+   *
+   * @example
+   * ```typescript
+   * watcher.on('change', async (files) => {
+   *   // 重新加载模块...
+   *   await pluginManager.triggerHotReload(files);
+   * });
+   * ```
+   */
+  async triggerHotReload(changedFiles: string[]): Promise<void> {
+    const activePlugins = this.getActivePlugins();
+    for (const plugin of activePlugins) {
+      if (plugin.onHotReload) {
+        try {
+          await plugin.onHotReload(changedFiles, this.container);
+        } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
+          this.pluginErrors.set(plugin.name, err);
+          this.eventEmitter.emit("plugin:error", plugin.name, err);
+          // 热重载错误不中断其他插件
+        }
+      }
+    }
+    this.eventEmitter.emit("app:hotreload", changedFiles);
   }
 }

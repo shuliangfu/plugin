@@ -2,9 +2,9 @@
  * 资源清理测试
  */
 
-import { describe, expect, it } from "@dreamer/test";
 import { ServiceContainer } from "@dreamer/service";
-import { PluginManager, type Plugin } from "../src/mod.ts";
+import { describe, expect, it } from "@dreamer/test";
+import { type Plugin, PluginManager } from "../src/mod.ts";
 
 describe("资源清理", () => {
   describe("dispose", () => {
@@ -15,9 +15,6 @@ describe("资源清理", () => {
       const plugin: Plugin = {
         name: "test-plugin",
         version: "1.0.0",
-        async install(container) {
-          container.registerSingleton("testService", () => ({ value: "test" }));
-        },
       };
 
       manager.register(plugin);

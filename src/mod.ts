@@ -41,12 +41,21 @@ export type { HotReloadOptions } from "./hot-reload.ts";
 
 // 导出类型
 export type {
+  AppEventHooks,
+  BuildOptions,
+  BuildResult,
   ConfigValidator,
+  HealthStatus,
   Plugin,
   PluginDebugInfo,
   PluginManagerOptions,
   PluginState,
+  RegisterOptions,
+  RequestContext,
   ResourceLimits,
+  RouteDefinition,
+  ScheduleContext,
+  WebSocketContext,
 } from "./types.ts";
 
 // 导出工具函数

@@ -1,5 +1,7 @@
 /**
  * 错误隔离测试
+ *
+ * 测试事件钩子中的错误隔离
  */
 
 import { ServiceContainer } from "@dreamer/service";
@@ -7,8 +9,44 @@ import { describe, expect, it } from "@dreamer/test";
 import { type Plugin, PluginManager } from "../src/mod.ts";
 
 describe("错误隔离", () => {
-  describe("插件错误隔离", () => {
+  describe("事件钩子错误隔离", () => {
     it("应该隔离插件错误，不影响其他插件", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container, {
+        continueOnError: true,
+      });
+      let normalPluginCalled = false;
+
+      const errorPlugin: Plugin = {
+        name: "error-plugin",
+        version: "1.0.0",
+        async onInit() {
+          throw new Error("初始化失败");
+        },
+      };
+
+      const normalPlugin: Plugin = {
+        name: "normal-plugin",
+        version: "1.0.0",
+        async onInit() {
+          normalPluginCalled = true;
+        },
+      };
+
+      manager.register(errorPlugin);
+      manager.register(normalPlugin);
+      await manager.install("error-plugin");
+      await manager.install("normal-plugin");
+      manager.activate("error-plugin");
+      manager.activate("normal-plugin");
+
+      // 触发初始化（错误插件会失败，但不影响正常插件）
+      await manager.triggerInit();
+
+      expect(normalPluginCalled).toBe(true);
+    });
+
+    it("应该在 triggerInit 中捕获错误并记录", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container, {
         continueOnError: true,
@@ -17,150 +55,62 @@ describe("错误隔离", () => {
       const errorPlugin: Plugin = {
         name: "error-plugin",
         version: "1.0.0",
-        async install() {
-          throw new Error("安装失败");
+        async onInit() {
+          throw new Error("插件初始化错误");
+        },
+      };
+
+      await manager.use(errorPlugin);
+
+      // 触发初始化
+      await manager.triggerInit();
+
+      // 检查错误是否被记录
+      const debugInfo = manager.getDebugInfo("error-plugin");
+      expect(debugInfo).toBeDefined();
+      expect(Array.isArray(debugInfo)).toBe(false);
+      // 错误应该被记录在 pluginErrors 中
+    });
+
+    it("应该在 triggerRequest 中捕获错误", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container, {
+        continueOnError: true,
+      });
+      let secondPluginCalled = false;
+
+      const errorPlugin: Plugin = {
+        name: "error-plugin",
+        version: "1.0.0",
+        async onRequest() {
+          throw new Error("请求处理错误");
         },
       };
 
       const normalPlugin: Plugin = {
         name: "normal-plugin",
         version: "1.0.0",
-        async install(container) {
-          container.registerSingleton("normalService", () => ({ value: "ok" }));
+        async onRequest() {
+          secondPluginCalled = true;
         },
       };
 
-      manager.register(errorPlugin);
-      manager.register(normalPlugin);
+      await manager.use(errorPlugin);
+      await manager.use(normalPlugin);
 
-      // 安装错误插件（应该被捕获）
-      try {
-        await manager.install("error-plugin");
-      } catch {
-        // 忽略错误
-      }
-
-      // 安装正常插件（应该成功）
-      await manager.install("normal-plugin");
-
-      expect(container.has("normalService")).toBe(true);
-      expect(manager.getState("normal-plugin")).toBe("installed");
-    });
-
-    it("应该记录每个插件的错误", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container, {
-        continueOnError: true,
-      });
-
-      const plugin1: Plugin = {
-        name: "plugin1",
-        version: "1.0.0",
-        async install() {
-          throw new Error("插件1错误");
-        },
+      // 模拟请求
+      const ctx = {
+        request: new Request("http://localhost/test"),
+        path: "/test",
+        method: "GET",
+        url: new URL("http://localhost/test"),
+        headers: new Headers(),
       };
 
-      const plugin2: Plugin = {
-        name: "plugin2",
-        version: "2.0.0",
-        async activate() {
-          throw new Error("插件2错误");
-        },
-      };
+      await manager.triggerRequest(ctx);
 
-      manager.register(plugin1);
-      manager.register(plugin2);
-
-      try {
-        await manager.install("plugin1");
-      } catch {
-        // 忽略
-      }
-
-      await manager.install("plugin2");
-
-      try {
-        await manager.activate("plugin2");
-      } catch {
-        // 忽略
-      }
-
-      const debugInfo1 = manager.getDebugInfo("plugin1");
-      const debugInfo2 = manager.getDebugInfo("plugin2");
-
-      expect(debugInfo1).toBeDefined();
-      expect(Array.isArray(debugInfo1)).toBe(false);
-      expect((debugInfo1 as any).error).toBeInstanceOf(Error);
-      expect((debugInfo1 as any).error?.message).toContain("插件1错误");
-      expect(debugInfo2).toBeDefined();
-      expect(Array.isArray(debugInfo2)).toBe(false);
-      expect((debugInfo2 as any).error).toBeInstanceOf(Error);
-      expect((debugInfo2 as any).error?.message).toContain("插件2错误");
-    });
-
-    it("应该在成功操作后清除错误", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container, {
-        continueOnError: true,
-      });
-
-      // 先创建一个安装失败的插件
-      const errorPlugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async install() {
-          throw new Error("安装失败");
-        },
-      };
-
-      manager.register(errorPlugin);
-
-      // 安装失败
-      try {
-        await manager.install("test-plugin");
-      } catch {
-        // 忽略
-      }
-
-      let debugInfo = manager.getDebugInfo("test-plugin");
-      expect(debugInfo).toBeDefined();
-      expect(Array.isArray(debugInfo)).toBe(false);
-      expect((debugInfo as any).error).toBeInstanceOf(Error);
-
-      // 卸载插件
-      try {
-        await manager.uninstall("test-plugin");
-      } catch {
-        // 忽略
-      }
-
-      // 由于插件已经注册，我们不能重新注册
-      // 但我们可以通过重新安装来清除错误（如果安装成功）
-      // 为了测试清除错误，我们创建一个新的插件管理器
-      const newContainer = new ServiceContainer();
-      const newManager = new PluginManager(newContainer, {
-        continueOnError: true,
-      });
-
-      // 创建一个安装成功的插件
-      const fixedPlugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async activate() {
-          // 激活成功
-        },
-      };
-
-      // 注册并安装
-      newManager.register(fixedPlugin);
-      await newManager.install("test-plugin");
-      await newManager.activate("test-plugin");
-
-      const newDebugInfo = newManager.getDebugInfo("test-plugin");
-      expect(newDebugInfo).toBeDefined();
-      expect(Array.isArray(newDebugInfo)).toBe(false);
-      expect((newDebugInfo as any).error).toBeUndefined();
+      // 第二个插件应该仍然被调用
+      expect(secondPluginCalled).toBe(true);
     });
   });
 
@@ -184,23 +134,80 @@ describe("错误隔离", () => {
       const plugin: Plugin = {
         name: "test-plugin",
         version: "1.0.0",
-        async install() {
+        async onInit() {
           throw new Error("测试错误");
         },
       };
 
-      manager.register(plugin);
-
-      try {
-        await manager.install("test-plugin");
-      } catch {
-        // 忽略
-      }
+      await manager.use(plugin);
+      await manager.triggerInit();
 
       expect(errorEventCalled).toBe(true);
       expect(errorEventName).toBe("test-plugin");
       expect(errorEventError).toBeInstanceOf(Error);
       expect(errorEventError?.message).toContain("测试错误");
+    });
+  });
+
+  describe("continueOnError 选项", () => {
+    it("continueOnError: true 时应该继续执行", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container, {
+        continueOnError: true,
+      });
+      let secondPluginCalled = false;
+
+      const errorPlugin: Plugin = {
+        name: "error-plugin",
+        version: "1.0.0",
+        async onStart() {
+          throw new Error("启动失败");
+        },
+      };
+
+      const normalPlugin: Plugin = {
+        name: "normal-plugin",
+        version: "1.0.0",
+        async onStart() {
+          secondPluginCalled = true;
+        },
+      };
+
+      await manager.use(errorPlugin);
+      await manager.use(normalPlugin);
+
+      // 不应该抛出错误
+      await manager.triggerStart();
+
+      expect(secondPluginCalled).toBe(true);
+    });
+
+    it("continueOnError: false 时应该抛出错误", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container, {
+        continueOnError: false,
+      });
+
+      const errorPlugin: Plugin = {
+        name: "error-plugin",
+        version: "1.0.0",
+        async onInit() {
+          throw new Error("初始化失败");
+        },
+      };
+
+      await manager.use(errorPlugin);
+
+      let errorThrown = false;
+      try {
+        await manager.triggerInit();
+      } catch (error) {
+        errorThrown = true;
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain("初始化失败");
+      }
+
+      expect(errorThrown).toBe(true);
     });
   });
 });

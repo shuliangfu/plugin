@@ -24,7 +24,15 @@ describe("调试工具", () => {
 
       expect(debugInfo).toBeDefined();
       expect(Array.isArray(debugInfo)).toBe(false);
-      const info = debugInfo as any;
+      const info = debugInfo as {
+        name: string;
+        version: string;
+        state: string;
+        dependencies: string[];
+        services: string[];
+        config?: Record<string, unknown>;
+        error?: Error;
+      };
       expect(info.name).toBe("test-plugin");
       expect(info.version).toBe("1.0.0");
       expect(info.state).toBe("registered");
@@ -34,17 +42,13 @@ describe("调试工具", () => {
       expect(info.error).toBeUndefined();
     });
 
-    it("应该包含插件注册的服务", async () => {
+    it("应该在安装后更新状态", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
 
       const plugin: Plugin = {
         name: "test-plugin",
         version: "1.0.0",
-        async install(container) {
-          container.registerSingleton("service1", () => ({ value: 1 }));
-          container.registerSingleton("service2", () => ({ value: 2 }));
-        },
       };
 
       manager.register(plugin);
@@ -53,12 +57,31 @@ describe("调试工具", () => {
       const debugInfo = manager.getDebugInfo("test-plugin");
       expect(debugInfo).toBeDefined();
       expect(Array.isArray(debugInfo)).toBe(false);
-      const info = debugInfo as any;
-      expect(info.services).toContain("service1");
-      expect(info.services).toContain("service2");
+      const info = debugInfo as { state: string };
+      expect(info.state).toBe("installed");
     });
 
-    it("应该包含插件错误信息", async () => {
+    it("应该在激活后更新状态", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      manager.activate("test-plugin");
+
+      const debugInfo = manager.getDebugInfo("test-plugin");
+      expect(debugInfo).toBeDefined();
+      expect(Array.isArray(debugInfo)).toBe(false);
+      const info = debugInfo as { state: string };
+      expect(info.state).toBe("active");
+    });
+
+    it("应该包含事件钩子中的错误信息", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container, {
         continueOnError: true,
@@ -67,25 +90,20 @@ describe("调试工具", () => {
       const plugin: Plugin = {
         name: "test-plugin",
         version: "1.0.0",
-        async install() {
-          throw new Error("安装失败");
+        async onInit() {
+          throw new Error("初始化失败");
         },
       };
 
-      manager.register(plugin);
-
-      try {
-        await manager.install("test-plugin");
-      } catch {
-        // 忽略错误
-      }
+      await manager.use(plugin);
+      await manager.triggerInit();
 
       const debugInfo = manager.getDebugInfo("test-plugin");
       expect(debugInfo).toBeDefined();
       expect(Array.isArray(debugInfo)).toBe(false);
-      const info = debugInfo as any;
+      const info = debugInfo as { error?: Error };
       expect(info.error).toBeInstanceOf(Error);
-      expect(info.error?.message).toContain("安装失败");
+      expect(info.error?.message).toContain("初始化失败");
     });
 
     it("应该返回所有插件的调试信息", () => {
@@ -109,10 +127,10 @@ describe("调试工具", () => {
 
       expect(Array.isArray(allDebugInfo)).toBe(true);
       expect(allDebugInfo).toBeDefined();
-      const infoArray = allDebugInfo as any[];
+      const infoArray = allDebugInfo as { name: string }[];
       expect(infoArray.length).toBe(2);
-      expect(infoArray.map((info: any) => info.name)).toContain("plugin1");
-      expect(infoArray.map((info: any) => info.name)).toContain("plugin2");
+      expect(infoArray.map((info) => info.name)).toContain("plugin1");
+      expect(infoArray.map((info) => info.name)).toContain("plugin2");
     });
 
     it("应该拒绝获取未注册插件的调试信息", () => {

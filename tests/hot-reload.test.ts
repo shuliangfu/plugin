@@ -30,27 +30,19 @@ describe("热加载", () => {
         export default {
           name: "test-plugin",
           version: "1.0.0",
-          async install(container) {
-            container.registerSingleton("testService", () => ({ value: 1 }));
-          },
         };
       `;
       await writeTextFile(tempFile, pluginContent1);
 
       // 加载插件
       await manager.loadFromFile(tempFile);
-      await manager.install("test-plugin");
-
-      expect(container.has("testService")).toBe(true);
+      expect(manager.getPlugin("test-plugin")).toBeDefined();
 
       // 修改插件文件
       const pluginContent2 = `
         export default {
           name: "test-plugin",
-          version: "1.0.0",
-          async install(container) {
-            container.registerSingleton("testService", () => ({ value: 2 }));
-          },
+          version: "2.0.0",
         };
       `;
       await writeTextFile(tempFile, pluginContent2);

@@ -1,28 +1,26 @@
 /**
  * 应用级别事件钩子测试
+ *
+ * 测试 PluginManager 的 trigger* 方法是否正确触发插件的事件钩子
  */
 
 import { ServiceContainer } from "@dreamer/service";
 import { describe, expect, it } from "@dreamer/test";
 import { PluginManager } from "../src/mod.ts";
-import type { Plugin } from "../src/types.ts";
+import type {
+  Plugin,
+  RequestContext,
+  RouteDefinition,
+  ScheduleContext,
+  WebSocketContext,
+} from "../src/types.ts";
 
-// 定义简化的 HttpContext 类型（用于测试，匹配 Plugin 接口中的类型）
-type HttpContext = {
-  request: Request;
-  response?: Response;
-  path: string;
-  method: string;
-  url: URL;
-  headers: Headers;
-  params?: Record<string, string>;
-  query?: Record<string, string>;
-  body?: unknown;
-  [key: string]: unknown;
-};
-
-// 模拟 HttpContext
-function createMockHttpContext(): HttpContext {
+/**
+ * 创建模拟的请求上下文
+ *
+ * @returns 模拟的 RequestContext 对象
+ */
+function createMockRequestContext(): RequestContext {
   return {
     request: new Request("http://example.com/test"),
     path: "/test",
@@ -32,36 +30,45 @@ function createMockHttpContext(): HttpContext {
   };
 }
 
-describe("应用级别事件钩子", () => {
-  describe("onInit", () => {
-    it("应该调用 onInit 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onInitCalled = false;
+/**
+ * 创建模拟的 WebSocket 上下文
+ *
+ * @returns 模拟的 WebSocketContext 对象
+ */
+function createMockWebSocketContext(): WebSocketContext {
+  // 创建一个模拟的 WebSocket 对象
+  const mockSocket = {
+    readyState: 1, // OPEN
+    send: () => {},
+    close: () => {},
+  } as unknown as WebSocket;
 
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onInit(container) {
-          onInitCalled = true;
-          expect(container).toBeInstanceOf(ServiceContainer);
-        },
-      };
+  return {
+    socket: mockSocket,
+    request: new Request("http://example.com/ws"),
+    connectionId: "test-connection-id",
+  };
+}
 
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
+/**
+ * 创建模拟的定时任务上下文
+ *
+ * @returns 模拟的 ScheduleContext 对象
+ */
+function createMockScheduleContext(): ScheduleContext {
+  return {
+    taskName: "test-task",
+    schedule: "0 * * * *",
+    lastRun: new Date(Date.now() - 3600000),
+    nextRun: new Date(Date.now() + 3600000),
+  };
+}
 
-      // 注意：onInit 是由应用框架触发的，这里我们直接调用
-      // 在实际应用中，这应该由 dweb 框架触发
-      if (plugin.onInit) {
-        await plugin.onInit(container);
-      }
+describe("应用级别事件钩子 - Manager trigger* 方法", () => {
+  // ==================== 生命周期事件测试 ====================
 
-      expect(onInitCalled).toBe(true);
-    });
-
-    it("应该支持多个插件的 onInit 钩子", async () => {
+  describe("triggerInit", () => {
+    it("应该触发所有已激活插件的 onInit 钩子", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
       const calledPlugins: string[] = [];
@@ -89,494 +96,14 @@ describe("应用级别事件钩子", () => {
       await manager.activate("plugin1");
       await manager.activate("plugin2");
 
-      // 模拟触发 onInit
-      if (plugin1.onInit) await plugin1.onInit(container);
-      if (plugin2.onInit) await plugin2.onInit(container);
+      // 使用 Manager 的 triggerInit 方法
+      await manager.triggerInit();
 
       expect(calledPlugins).toContain("plugin1");
       expect(calledPlugins).toContain("plugin2");
     });
 
-    it("应该处理 onInit 钩子中的错误", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let errorCaught = false;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onInit() {
-          throw new Error("onInit 错误");
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      try {
-        if (plugin.onInit) {
-          await plugin.onInit(container);
-        }
-      } catch (error) {
-        errorCaught = true;
-        expect(error).toBeInstanceOf(Error);
-      }
-
-      expect(errorCaught).toBe(true);
-    });
-  });
-
-  describe("onStart", () => {
-    it("应该调用 onStart 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onStartCalled = false;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onStart(container) {
-          onStartCalled = true;
-          expect(container).toBeInstanceOf(ServiceContainer);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      if (plugin.onStart) {
-        await plugin.onStart(container);
-      }
-
-      expect(onStartCalled).toBe(true);
-    });
-  });
-
-  describe("onStop", () => {
-    it("应该调用 onStop 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onStopCalled = false;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onStop(container) {
-          onStopCalled = true;
-          expect(container).toBeInstanceOf(ServiceContainer);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      if (plugin.onStop) {
-        await plugin.onStop(container);
-      }
-
-      expect(onStopCalled).toBe(true);
-    });
-  });
-
-  describe("onShutdown", () => {
-    it("应该调用 onShutdown 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onShutdownCalled = false;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onShutdown(container) {
-          onShutdownCalled = true;
-          expect(container).toBeInstanceOf(ServiceContainer);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      if (plugin.onShutdown) {
-        await plugin.onShutdown(container);
-      }
-
-      expect(onShutdownCalled).toBe(true);
-    });
-  });
-
-  describe("onRequest", () => {
-    it("应该调用 onRequest 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onRequestCalled = false;
-      let receivedCtx: HttpContext | null = null;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onRequest(ctx: HttpContext, container: ServiceContainer) {
-          onRequestCalled = true;
-          receivedCtx = ctx;
-          expect(ctx).toBeDefined();
-          expect(ctx.path).toBe("/test");
-          expect(ctx.method).toBe("GET");
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const ctx = createMockHttpContext();
-      if (plugin.onRequest) {
-        await plugin.onRequest(ctx, container);
-      }
-
-      expect(onRequestCalled).toBe(true);
-      expect(receivedCtx).not.toBeNull();
-      if (receivedCtx) {
-        expect((receivedCtx as HttpContext).path).toBe("/test");
-      }
-    });
-
-    it("应该能够访问请求上下文的所有属性", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let accessedProperties: string[] = [];
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onRequest(ctx) {
-          accessedProperties.push("request");
-          accessedProperties.push("path");
-          accessedProperties.push("method");
-          accessedProperties.push("url");
-          accessedProperties.push("headers");
-
-          expect(ctx.request).toBeInstanceOf(Request);
-          expect(typeof ctx.path).toBe("string");
-          expect(typeof ctx.method).toBe("string");
-          expect(ctx.url).toBeInstanceOf(URL);
-          expect(ctx.headers).toBeInstanceOf(Headers);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const ctx = createMockHttpContext();
-      if (plugin.onRequest) {
-        await plugin.onRequest(ctx, container);
-      }
-
-      expect(accessedProperties.length).toBeGreaterThan(0);
-    });
-
-    it("应该处理 onRequest 钩子中的错误", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let errorCaught = false;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onRequest() {
-          throw new Error("onRequest 错误");
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const ctx = createMockHttpContext();
-      try {
-        if (plugin.onRequest) {
-          await plugin.onRequest(ctx, container);
-        }
-      } catch (error) {
-        errorCaught = true;
-        expect(error).toBeInstanceOf(Error);
-      }
-
-      expect(errorCaught).toBe(true);
-    });
-  });
-
-  describe("onResponse", () => {
-    it("应该调用 onResponse 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onResponseCalled = false;
-      let receivedCtx: Parameters<NonNullable<Plugin["onResponse"]>>[0] | null =
-        null;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onResponse(ctx, container) {
-          onResponseCalled = true;
-          receivedCtx = ctx;
-          expect(ctx).toBeDefined();
-          expect(ctx.response).toBeDefined();
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const ctx = createMockHttpContext();
-      ctx.response = new Response("OK", { status: 200 });
-      if (plugin.onResponse) {
-        await plugin.onResponse(ctx, container);
-      }
-
-      expect(onResponseCalled).toBe(true);
-      expect(receivedCtx).not.toBeNull();
-      if (receivedCtx) {
-        expect((receivedCtx as HttpContext).response).toBeDefined();
-      }
-    });
-
-    it("应该能够访问响应对象", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let responseStatus: number | null = null;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onResponse(ctx) {
-          if (ctx.response) {
-            responseStatus = ctx.response.status;
-          }
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const ctx = createMockHttpContext();
-      ctx.response = new Response("OK", { status: 201 });
-      if (plugin.onResponse) {
-        await plugin.onResponse(ctx, container);
-      }
-
-      expect(responseStatus).toBe(201);
-    });
-  });
-
-  describe("onBuild", () => {
-    it("应该调用 onBuild 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onBuildCalled = false;
-      let receivedOptions: {
-        mode: "dev" | "prod";
-        target?: "client" | "server";
-      } | null = null;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onBuild(options, container) {
-          onBuildCalled = true;
-          receivedOptions = options;
-          expect(options.mode).toBe("prod");
-          expect(container).toBeInstanceOf(ServiceContainer);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const options = { mode: "prod" as const, target: "client" as const };
-      if (plugin.onBuild) {
-        await plugin.onBuild(options, container);
-      }
-
-      expect(onBuildCalled).toBe(true);
-      expect(receivedOptions).not.toBeNull();
-      if (receivedOptions) {
-        expect(
-          (receivedOptions as {
-            mode: "dev" | "prod";
-            target?: "client" | "server";
-          }).mode,
-        ).toBe("prod");
-      }
-    });
-
-    it("应该支持 dev 和 prod 模式", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      const modes: string[] = [];
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onBuild(options) {
-          modes.push(options.mode);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      if (plugin.onBuild) {
-        await plugin.onBuild({ mode: "dev" }, container);
-        await plugin.onBuild({ mode: "prod" }, container);
-      }
-
-      expect(modes).toContain("dev");
-      expect(modes).toContain("prod");
-    });
-  });
-
-  describe("onBuildComplete", () => {
-    it("应该调用 onBuildComplete 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onBuildCompleteCalled = false;
-      let receivedResult:
-        | Parameters<NonNullable<Plugin["onBuildComplete"]>>[0]
-        | null = null;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onBuildComplete(result, container) {
-          onBuildCompleteCalled = true;
-          receivedResult = result;
-          expect(result.outputFiles).toBeDefined();
-          expect(container).toBeInstanceOf(ServiceContainer);
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const result = {
-        outputFiles: ["file1.js", "file2.css"],
-        errors: [],
-        warnings: [],
-      };
-      if (plugin.onBuildComplete) {
-        await plugin.onBuildComplete(result, container);
-      }
-
-      expect(onBuildCompleteCalled).toBe(true);
-      expect(receivedResult).not.toBeNull();
-      if (receivedResult) {
-        expect(
-          (receivedResult as {
-            outputFiles?: string[];
-            errors?: unknown[];
-            warnings?: unknown[];
-          }).outputFiles,
-        ).toEqual(["file1.js", "file2.css"]);
-      }
-    });
-
-    it("应该能够访问构建结果的所有属性", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let accessedProperties: string[] = [];
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onBuildComplete(result) {
-          if (result.outputFiles) accessedProperties.push("outputFiles");
-          if (result.errors) accessedProperties.push("errors");
-          if (result.warnings) accessedProperties.push("warnings");
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const result = {
-        outputFiles: ["file1.js"],
-        errors: [new Error("构建错误")],
-        warnings: ["警告信息"],
-      };
-      if (plugin.onBuildComplete) {
-        await plugin.onBuildComplete(result, container);
-      }
-
-      expect(accessedProperties.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe("事件钩子组合", () => {
-    it("应该支持插件实现多个事件钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      const calledHooks: string[] = [];
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onInit() {
-          calledHooks.push("onInit");
-        },
-        async onStart() {
-          calledHooks.push("onStart");
-        },
-        async onRequest() {
-          calledHooks.push("onRequest");
-        },
-        async onResponse() {
-          calledHooks.push("onResponse");
-        },
-        async onStop() {
-          calledHooks.push("onStop");
-        },
-        async onShutdown() {
-          calledHooks.push("onShutdown");
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      // 模拟触发所有事件
-      if (plugin.onInit) await plugin.onInit(container);
-      if (plugin.onStart) await plugin.onStart(container);
-      if (plugin.onRequest) {
-        await plugin.onRequest(createMockHttpContext(), container);
-      }
-      if (plugin.onResponse) {
-        const ctx = createMockHttpContext();
-        ctx.response = new Response();
-        await plugin.onResponse(ctx, container);
-      }
-      if (plugin.onStop) await plugin.onStop(container);
-      if (plugin.onShutdown) await plugin.onShutdown(container);
-
-      expect(calledHooks).toContain("onInit");
-      expect(calledHooks).toContain("onStart");
-      expect(calledHooks).toContain("onRequest");
-      expect(calledHooks).toContain("onResponse");
-      expect(calledHooks).toContain("onStop");
-      expect(calledHooks).toContain("onShutdown");
-    });
-
-    it("应该只触发已激活插件的事件钩子", async () => {
+    it("应该只触发已激活插件的 onInit 钩子", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
       let activePluginCalled = false;
@@ -605,28 +132,21 @@ describe("应用级别事件钩子", () => {
       await manager.activate("active-plugin");
       // inactive-plugin 未激活
 
-      // 只触发已激活插件的钩子
-      if (activePlugin.onInit) await activePlugin.onInit(container);
-      if (inactivePlugin.onInit) await inactivePlugin.onInit(container);
+      await manager.triggerInit();
 
       expect(activePluginCalled).toBe(true);
-      // 注意：这里 inactivePluginCalled 也会是 true，因为我们是直接调用的
-      // 在实际应用中，事件系统会检查插件状态
+      expect(inactivePluginCalled).toBe(false);
     });
-  });
 
-  describe("事件钩子错误处理", () => {
-    it("应该隔离不同插件的事件钩子错误", async () => {
+    it("应该处理 onInit 钩子中的错误（continueOnError: true）", async () => {
       const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let errorPluginCalled = false;
+      const manager = new PluginManager(container, { continueOnError: true });
       let normalPluginCalled = false;
 
       const errorPlugin: Plugin = {
         name: "error-plugin",
         version: "1.0.0",
         async onInit() {
-          errorPluginCalled = true;
           throw new Error("onInit 错误");
         },
       };
@@ -646,18 +166,588 @@ describe("应用级别事件钩子", () => {
       await manager.activate("error-plugin");
       await manager.activate("normal-plugin");
 
-      // 触发错误插件的钩子（应该抛出错误）
-      try {
-        if (errorPlugin.onInit) await errorPlugin.onInit(container);
-      } catch {
-        // 捕获错误
-      }
+      // 不应该抛出错误，继续执行
+      await manager.triggerInit();
 
-      // 触发正常插件的钩子（应该成功）
-      if (normalPlugin.onInit) await normalPlugin.onInit(container);
-
-      expect(errorPluginCalled).toBe(true);
       expect(normalPluginCalled).toBe(true);
+    });
+  });
+
+  describe("triggerStart", () => {
+    it("应该触发所有已激活插件的 onStart 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onStartCalled = false;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onStart(container) {
+          onStartCalled = true;
+          expect(container).toBeInstanceOf(ServiceContainer);
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      await manager.triggerStart();
+
+      expect(onStartCalled).toBe(true);
+    });
+  });
+
+  describe("triggerStop", () => {
+    it("应该触发所有已激活插件的 onStop 钩子（逆序）", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      const stopOrder: string[] = [];
+
+      const plugin1: Plugin = {
+        name: "plugin1",
+        version: "1.0.0",
+        async onStop() {
+          stopOrder.push("plugin1");
+        },
+      };
+
+      const plugin2: Plugin = {
+        name: "plugin2",
+        version: "1.0.0",
+        async onStop() {
+          stopOrder.push("plugin2");
+        },
+      };
+
+      manager.register(plugin1);
+      manager.register(plugin2);
+      await manager.install("plugin1");
+      await manager.install("plugin2");
+      await manager.activate("plugin1");
+      await manager.activate("plugin2");
+
+      await manager.triggerStop();
+
+      // 后激活的先停止
+      expect(stopOrder[0]).toBe("plugin2");
+      expect(stopOrder[1]).toBe("plugin1");
+    });
+  });
+
+  describe("triggerShutdown", () => {
+    it("应该触发所有已激活插件的 onShutdown 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onShutdownCalled = false;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onShutdown() {
+          onShutdownCalled = true;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      await manager.triggerShutdown();
+
+      expect(onShutdownCalled).toBe(true);
+    });
+  });
+
+  // ==================== HTTP 请求事件测试 ====================
+
+  describe("triggerRequest", () => {
+    it("应该触发所有已激活插件的 onRequest 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onRequestCalled = false;
+      let receivedCtx: RequestContext | null = null;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onRequest(ctx) {
+          onRequestCalled = true;
+          receivedCtx = ctx;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      const ctx = createMockRequestContext();
+      await manager.triggerRequest(ctx);
+
+      expect(onRequestCalled).toBe(true);
+      expect(receivedCtx).not.toBeNull();
+      expect(receivedCtx!.path).toBe("/test");
+    });
+
+    it("应该在插件返回 Response 时直接返回", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let secondPluginCalled = false;
+
+      const authPlugin: Plugin = {
+        name: "auth-plugin",
+        version: "1.0.0",
+        async onRequest() {
+          // 模拟认证失败，返回 401
+          return new Response("Unauthorized", { status: 401 });
+        },
+      };
+
+      const logPlugin: Plugin = {
+        name: "log-plugin",
+        version: "1.0.0",
+        async onRequest() {
+          secondPluginCalled = true;
+        },
+      };
+
+      manager.register(authPlugin);
+      manager.register(logPlugin);
+      await manager.install("auth-plugin");
+      await manager.install("log-plugin");
+      await manager.activate("auth-plugin");
+      await manager.activate("log-plugin");
+
+      const ctx = createMockRequestContext();
+      const response = await manager.triggerRequest(ctx);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response!.status).toBe(401);
+      // 由于第一个插件返回了 Response，第二个插件不应该被调用
+      expect(secondPluginCalled).toBe(false);
+    });
+  });
+
+  describe("triggerResponse", () => {
+    it("应该触发所有已激活插件的 onResponse 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onResponseCalled = false;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onResponse(ctx) {
+          onResponseCalled = true;
+          expect(ctx.response).toBeDefined();
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      const ctx = createMockRequestContext();
+      ctx.response = new Response("OK", { status: 200 });
+      await manager.triggerResponse(ctx);
+
+      expect(onResponseCalled).toBe(true);
+    });
+  });
+
+  // ==================== 错误处理事件测试 ====================
+
+  describe("triggerError", () => {
+    it("应该触发所有已激活插件的 onError 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onErrorCalled = false;
+      let receivedError: Error | null = null;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onError(error) {
+          onErrorCalled = true;
+          receivedError = error;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      const testError = new Error("测试错误");
+      await manager.triggerError(testError);
+
+      expect(onErrorCalled).toBe(true);
+      expect(receivedError).toBe(testError);
+    });
+
+    it("应该在插件返回 Response 时返回自定义错误响应", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+
+      const errorHandlerPlugin: Plugin = {
+        name: "error-handler",
+        version: "1.0.0",
+        async onError(error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        },
+      };
+
+      manager.register(errorHandlerPlugin);
+      await manager.install("error-handler");
+      await manager.activate("error-handler");
+
+      const testError = new Error("测试错误");
+      const response = await manager.triggerError(testError);
+
+      expect(response).toBeInstanceOf(Response);
+      expect(response!.status).toBe(500);
+    });
+  });
+
+  // ==================== 路由事件测试 ====================
+
+  describe("triggerRoute", () => {
+    it("应该允许插件修改路由列表", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+
+      const routePlugin: Plugin = {
+        name: "route-plugin",
+        version: "1.0.0",
+        async onRoute(routes) {
+          // 添加一个新路由
+          return [
+            ...routes,
+            {
+              path: "/plugin-route",
+              method: "GET" as const,
+              handler: () => new Response("Plugin Route"),
+            },
+          ];
+        },
+      };
+
+      manager.register(routePlugin);
+      await manager.install("route-plugin");
+      await manager.activate("route-plugin");
+
+      const initialRoutes: RouteDefinition[] = [
+        {
+          path: "/api/users",
+          method: "GET",
+          handler: () => new Response("Users"),
+        },
+      ];
+
+      const finalRoutes = await manager.triggerRoute(initialRoutes);
+
+      expect(finalRoutes.length).toBe(2);
+      expect(finalRoutes[1].path).toBe("/plugin-route");
+    });
+  });
+
+  // ==================== 构建事件测试 ====================
+
+  describe("triggerBuild", () => {
+    it("应该触发所有已激活插件的 onBuild 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onBuildCalled = false;
+      let receivedMode: string | null = null;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onBuild(options) {
+          onBuildCalled = true;
+          receivedMode = options.mode;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      await manager.triggerBuild({ mode: "prod", target: "client" });
+
+      expect(onBuildCalled).toBe(true);
+      expect(receivedMode).toBe("prod");
+    });
+  });
+
+  describe("triggerBuildComplete", () => {
+    it("应该触发所有已激活插件的 onBuildComplete 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onBuildCompleteCalled = false;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onBuildComplete(result) {
+          onBuildCompleteCalled = true;
+          expect(result.outputFiles).toEqual(["bundle.js"]);
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      await manager.triggerBuildComplete({
+        outputFiles: ["bundle.js"],
+        duration: 1000,
+      });
+
+      expect(onBuildCompleteCalled).toBe(true);
+    });
+  });
+
+  // ==================== WebSocket 事件测试 ====================
+
+  describe("triggerWebSocket", () => {
+    it("应该触发所有已激活插件的 onWebSocket 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onWebSocketCalled = false;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onWebSocket(ctx) {
+          onWebSocketCalled = true;
+          expect(ctx.socket).toBeDefined();
+          expect(ctx.connectionId).toBe("test-connection-id");
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      const ctx = createMockWebSocketContext();
+      await manager.triggerWebSocket(ctx);
+
+      expect(onWebSocketCalled).toBe(true);
+    });
+  });
+
+  describe("triggerWebSocketClose", () => {
+    it("应该触发所有已激活插件的 onWebSocketClose 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onWebSocketCloseCalled = false;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onWebSocketClose() {
+          onWebSocketCloseCalled = true;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      const ctx = createMockWebSocketContext();
+      await manager.triggerWebSocketClose(ctx);
+
+      expect(onWebSocketCloseCalled).toBe(true);
+    });
+  });
+
+  // ==================== 定时任务事件测试 ====================
+
+  describe("triggerSchedule", () => {
+    it("应该触发所有已激活插件的 onSchedule 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onScheduleCalled = false;
+      let receivedTaskName: string | null = null;
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onSchedule(ctx) {
+          onScheduleCalled = true;
+          receivedTaskName = ctx.taskName;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      const ctx = createMockScheduleContext();
+      await manager.triggerSchedule(ctx);
+
+      expect(onScheduleCalled).toBe(true);
+      expect(receivedTaskName).toBe("test-task");
+    });
+  });
+
+  // ==================== 健康检查事件测试 ====================
+
+  describe("triggerHealthCheck", () => {
+    it("应该聚合所有已激活插件的健康状态", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+
+      const healthyPlugin: Plugin = {
+        name: "healthy-plugin",
+        version: "1.0.0",
+        async onHealthCheck() {
+          return {
+            status: "healthy" as const,
+            checks: {
+              database: { status: "pass" as const },
+            },
+          };
+        },
+      };
+
+      const degradedPlugin: Plugin = {
+        name: "degraded-plugin",
+        version: "1.0.0",
+        async onHealthCheck() {
+          return {
+            status: "degraded" as const,
+            checks: {
+              cache: { status: "warn" as const, message: "缓存响应较慢" },
+            },
+          };
+        },
+      };
+
+      manager.register(healthyPlugin);
+      manager.register(degradedPlugin);
+      await manager.install("healthy-plugin");
+      await manager.install("degraded-plugin");
+      await manager.activate("healthy-plugin");
+      await manager.activate("degraded-plugin");
+
+      const status = await manager.triggerHealthCheck();
+
+      // 整体状态应该是 degraded（因为有一个插件是 degraded）
+      expect(status.status).toBe("degraded");
+      expect(status.checks).toBeDefined();
+      expect(status.timestamp).toBeDefined();
+    });
+
+    it("应该处理健康检查中的错误", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+
+      const errorPlugin: Plugin = {
+        name: "error-plugin",
+        version: "1.0.0",
+        async onHealthCheck() {
+          throw new Error("健康检查失败");
+        },
+      };
+
+      manager.register(errorPlugin);
+      await manager.install("error-plugin");
+      await manager.activate("error-plugin");
+
+      const status = await manager.triggerHealthCheck();
+
+      expect(status.status).toBe("unhealthy");
+      expect(status.checks!["error-plugin"].status).toBe("fail");
+      expect(status.checks!["error-plugin"].message).toBe("健康检查失败");
+    });
+  });
+
+  // ==================== 热重载事件测试 ====================
+
+  describe("triggerHotReload", () => {
+    it("应该触发所有已激活插件的 onHotReload 钩子", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      let onHotReloadCalled = false;
+      let receivedFiles: string[] = [];
+
+      const plugin: Plugin = {
+        name: "test-plugin",
+        version: "1.0.0",
+        async onHotReload(changedFiles) {
+          onHotReloadCalled = true;
+          receivedFiles = changedFiles;
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("test-plugin");
+      await manager.activate("test-plugin");
+
+      await manager.triggerHotReload(["src/app.ts", "src/utils.ts"]);
+
+      expect(onHotReloadCalled).toBe(true);
+      expect(receivedFiles).toEqual(["src/app.ts", "src/utils.ts"]);
+    });
+  });
+
+  // ==================== 事件钩子组合测试 ====================
+
+  describe("事件钩子组合", () => {
+    it("应该支持完整的生命周期流程", async () => {
+      const container = new ServiceContainer();
+      const manager = new PluginManager(container);
+      const lifecycle: string[] = [];
+
+      const plugin: Plugin = {
+        name: "lifecycle-plugin",
+        version: "1.0.0",
+        async onInit() {
+          lifecycle.push("init");
+        },
+        async onStart() {
+          lifecycle.push("start");
+        },
+        async onRequest() {
+          lifecycle.push("request");
+        },
+        async onResponse() {
+          lifecycle.push("response");
+        },
+        async onStop() {
+          lifecycle.push("stop");
+        },
+        async onShutdown() {
+          lifecycle.push("shutdown");
+        },
+      };
+
+      manager.register(plugin);
+      await manager.install("lifecycle-plugin");
+      await manager.activate("lifecycle-plugin");
+
+      // 模拟完整的应用生命周期
+      await manager.triggerInit();
+      await manager.triggerStart();
+      await manager.triggerRequest(createMockRequestContext());
+      const ctx = createMockRequestContext();
+      ctx.response = new Response();
+      await manager.triggerResponse(ctx);
+      await manager.triggerStop();
+      await manager.triggerShutdown();
+
+      expect(lifecycle).toEqual([
+        "init",
+        "start",
+        "request",
+        "response",
+        "stop",
+        "shutdown",
+      ]);
     });
   });
 });

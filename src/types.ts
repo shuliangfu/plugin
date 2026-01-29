@@ -22,79 +22,287 @@ export type ConfigValidator = (
 ) => boolean;
 
 /**
+ * 请求上下文类型
+ * 用于 onRequest 和 onResponse 钩子
+ */
+export interface RequestContext {
+  /** 原始请求对象 */
+  request: Request;
+  /** 响应对象（在 onResponse 中可用） */
+  response?: Response;
+  /** 请求路径 */
+  path: string;
+  /** 请求方法 */
+  method: string;
+  /** 解析后的 URL 对象 */
+  url: URL;
+  /** 请求头 */
+  headers: Headers;
+  /** 路由参数（如 /user/:id 中的 id） */
+  params?: Record<string, string>;
+  /** 查询参数 */
+  query?: Record<string, string>;
+  /** 请求体（已解析） */
+  body?: unknown;
+  /** 扩展属性 */
+  [key: string]: unknown;
+}
+
+/**
+ * 构建选项类型
+ */
+export interface BuildOptions {
+  /** 构建模式 */
+  mode: "dev" | "prod";
+  /** 构建目标 */
+  target?: "client" | "server";
+  /** 入口文件 */
+  entryPoints?: string[];
+  /** 输出目录 */
+  outDir?: string;
+  /** 是否压缩 */
+  minify?: boolean;
+  /** 是否生成 sourcemap */
+  sourcemap?: boolean;
+  /** 扩展属性 */
+  [key: string]: unknown;
+}
+
+/**
+ * 构建结果类型
+ */
+export interface BuildResult {
+  /** 输出文件列表 */
+  outputFiles?: string[];
+  /** 构建错误 */
+  errors?: unknown[];
+  /** 构建警告 */
+  warnings?: unknown[];
+  /** 构建耗时（毫秒） */
+  duration?: number;
+  /** 扩展属性 */
+  [key: string]: unknown;
+}
+
+/**
+ * 路由定义类型
+ */
+export interface RouteDefinition {
+  /** 路由路径 */
+  path: string;
+  /** 请求方法 */
+  method:
+    | "GET"
+    | "POST"
+    | "PUT"
+    | "DELETE"
+    | "PATCH"
+    | "HEAD"
+    | "OPTIONS"
+    | "*";
+  /** 路由处理函数 */
+  handler: (ctx: RequestContext) => Promise<Response> | Response;
+  /** 路由中间件 */
+  middlewares?:
+    ((ctx: RequestContext, next: () => Promise<void>) => Promise<void>)[];
+  /** 路由元数据 */
+  meta?: Record<string, unknown>;
+}
+
+/**
+ * 健康检查状态类型
+ */
+export interface HealthStatus {
+  /** 整体状态 */
+  status: "healthy" | "unhealthy" | "degraded";
+  /** 检查详情 */
+  checks?: Record<string, {
+    status: "pass" | "fail" | "warn";
+    message?: string;
+    duration?: number;
+  }>;
+  /** 检查时间戳 */
+  timestamp?: number;
+}
+
+/**
+ * WebSocket 上下文类型
+ */
+export interface WebSocketContext {
+  /** WebSocket 实例 */
+  socket: WebSocket;
+  /** 原始请求 */
+  request: Request;
+  /** 连接 ID */
+  connectionId?: string;
+  /** 用户信息（如果已认证） */
+  user?: unknown;
+  /** 扩展属性 */
+  [key: string]: unknown;
+}
+
+/**
+ * 定时任务上下文类型
+ */
+export interface ScheduleContext {
+  /** 任务名称 */
+  taskName: string;
+  /** cron 表达式或间隔 */
+  schedule: string;
+  /** 上次执行时间 */
+  lastRun?: Date;
+  /** 下次执行时间 */
+  nextRun?: Date;
+  /** 扩展属性 */
+  [key: string]: unknown;
+}
+
+/**
  * 应用级别的事件钩子类型
+ *
+ * 插件可以实现这些钩子来响应应用的各种事件，
+ * PluginManager 会在适当的时机调用所有已激活插件的对应钩子。
  */
 export interface AppEventHooks {
+  // ==================== 生命周期事件 ====================
+
   /** 应用初始化完成时调用（在所有插件安装和激活之后） */
   onInit?: (container: ServiceContainer) => Promise<void> | void;
-  /** 请求处理前调用（可以访问 req, res） */
+
+  /** 应用启动时调用（服务器开始监听） */
+  onStart?: (container: ServiceContainer) => Promise<void> | void;
+
+  /** 应用停止时调用（优雅停止，可以做清理工作） */
+  onStop?: (container: ServiceContainer) => Promise<void> | void;
+
+  /** 应用关闭时调用（最终清理，释放所有资源） */
+  onShutdown?: (container: ServiceContainer) => Promise<void> | void;
+
+  // ==================== HTTP 请求事件 ====================
+
+  /**
+   * 请求处理前调用
+   * 可以修改请求上下文，或返回 Response 直接响应（跳过后续处理）
+   */
   onRequest?: (
-    ctx: {
-      request: Request;
-      response?: Response;
-      path: string;
-      method: string;
-      url: URL;
-      headers: Headers;
-      params?: Record<string, string>;
-      query?: Record<string, string>;
-      body?: unknown;
-      [key: string]: unknown;
-    },
+    ctx: RequestContext,
     container: ServiceContainer,
-  ) => Promise<void> | void;
-  /** 请求处理完成后调用（可以访问 req, res） */
+  ) => Promise<Response | void> | Response | void;
+
+  /**
+   * 请求处理完成后调用
+   * 可以修改响应，或记录日志等
+   */
   onResponse?: (
-    ctx: {
-      request: Request;
-      response?: Response;
-      path: string;
-      method: string;
-      url: URL;
-      headers: Headers;
-      params?: Record<string, string>;
-      query?: Record<string, string>;
-      body?: unknown;
-      [key: string]: unknown;
-    },
+    ctx: RequestContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
+
+  // ==================== 错误处理事件 ====================
+
+  /**
+   * 错误发生时调用
+   * 可以记录错误、发送告警、或返回自定义错误响应
+   */
+  onError?: (
+    error: Error,
+    ctx: RequestContext | undefined,
+    container: ServiceContainer,
+  ) => Promise<Response | void> | Response | void;
+
+  // ==================== 路由事件 ====================
+
+  /**
+   * 路由注册时调用
+   * 插件可以动态添加、修改或删除路由
+   * 返回修改后的路由列表
+   */
+  onRoute?: (
+    routes: RouteDefinition[],
+    container: ServiceContainer,
+  ) => Promise<RouteDefinition[]> | RouteDefinition[];
+
+  // ==================== 构建事件 ====================
+
   /** 构建开始前调用 */
   onBuild?: (
-    options: {
-      mode: "dev" | "prod";
-      target?: "client" | "server";
-    },
+    options: BuildOptions,
     container: ServiceContainer,
   ) => Promise<void> | void;
+
   /** 构建完成后调用 */
   onBuildComplete?: (
-    result: {
-      outputFiles?: string[];
-      errors?: unknown[];
-      warnings?: unknown[];
-    },
+    result: BuildResult,
     container: ServiceContainer,
   ) => Promise<void> | void;
-  /** 应用启动时调用 */
-  onStart?: (container: ServiceContainer) => Promise<void> | void;
-  /** 应用停止时调用 */
-  onStop?: (container: ServiceContainer) => Promise<void> | void;
-  /** 应用关闭时调用 */
-  onShutdown?: (container: ServiceContainer) => Promise<void> | void;
+
+  // ==================== WebSocket 事件 ====================
+
+  /**
+   * WebSocket 连接建立时调用
+   * 可以进行认证、记录连接等
+   */
+  onWebSocket?: (
+    ctx: WebSocketContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+
+  /**
+   * WebSocket 连接关闭时调用
+   */
+  onWebSocketClose?: (
+    ctx: WebSocketContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+
+  // ==================== 定时任务事件 ====================
+
+  /**
+   * 定时任务触发时调用
+   */
+  onSchedule?: (
+    ctx: ScheduleContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+
+  // ==================== 健康检查事件 ====================
+
+  /**
+   * 健康检查时调用
+   * 返回插件的健康状态
+   */
+  onHealthCheck?: (
+    container: ServiceContainer,
+  ) => Promise<HealthStatus> | HealthStatus;
+
+  // ==================== 开发环境事件 ====================
+
+  /**
+   * 热重载完成时调用（仅开发环境）
+   * 可以清除缓存、重新初始化等
+   */
+  onHotReload?: (
+    changedFiles: string[],
+    container: ServiceContainer,
+  ) => Promise<void> | void;
 }
 
 /**
  * 插件接口
  *
- * 定义插件的基本结构和生命周期钩子
+ * 定义插件的基本结构和事件钩子
+ *
+ * 设计理念：
+ * - Manager 负责管理生命周期（注册→安装→激活→停用→卸载）
+ * - 插件只需响应应用级别事件（onInit、onRequest、onResponse 等）
+ * - 插件不需要写生命周期钩子（install、activate、deactivate、uninstall）
  */
 export interface Plugin extends AppEventHooks {
   /** 插件名称（唯一标识） */
   name: string;
   /** 插件版本 */
   version: string;
-  /** 插件依赖列表（可选） */
+  /** 插件依赖列表（可选，用于确保激活顺序） */
   dependencies?: string[];
   /** 插件配置（可选） */
   config?: Record<string, unknown>;
@@ -102,14 +310,19 @@ export interface Plugin extends AppEventHooks {
   validateConfig?: ConfigValidator;
   /** 配置更新钩子（可选，配置热更新时调用） */
   onConfigUpdate?: (newConfig: Record<string, unknown>) => Promise<void> | void;
-  /** 安装钩子（可选） */
-  install?: (container: ServiceContainer) => Promise<void> | void;
-  /** 激活钩子（可选） */
-  activate?: (container: ServiceContainer) => Promise<void> | void;
-  /** 停用钩子（可选） */
-  deactivate?: () => Promise<void> | void;
-  /** 卸载钩子（可选） */
-  uninstall?: () => Promise<void> | void;
+}
+
+/**
+ * 插件注册选项
+ */
+export interface RegisterOptions {
+  /**
+   * 是否替换已存在的同名插件（默认：false）
+   *
+   * - false: 如果插件已存在则抛出错误（安全，推荐）
+   * - true: 替换已存在的插件（用于热重载等场景）
+   */
+  replace?: boolean;
 }
 
 /**
