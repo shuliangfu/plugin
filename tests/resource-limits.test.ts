@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "@dreamer/test";
 import { ServiceContainer } from "@dreamer/service";
-import { PluginManager, type Plugin, type ResourceLimits } from "../src/mod.ts";
+import { type Plugin, PluginManager, type ResourceLimits } from "../src/mod.ts";
 
 describe("资源限制", () => {
   describe("资源限制配置", () => {

@@ -1,6 +1,7 @@
 # @dreamer/plugin
 
-> 一个兼容 Deno 和 Bun 的插件管理系统，提供完整的插件注册、生命周期管理、依赖解析、配置管理、热加载等功能
+> 一个兼容 Deno 和 Bun
+> 的插件管理系统，提供完整的插件注册、生命周期管理、依赖解析、配置管理、热加载等功能
 
 [![JSR](https://jsr.io/badges/@dreamer/plugin)](https://jsr.io/@dreamer/plugin)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
@@ -10,9 +11,13 @@
 
 ## 🎯 功能
 
-插件管理系统，用于管理应用的插件和扩展功能。插件系统依赖 `@dreamer/service` 来注册插件提供的服务，但保持职责分离：service 负责服务管理，plugin 负责插件生命周期管理。
+插件管理系统，用于管理应用的插件和扩展功能。插件系统依赖 `@dreamer/service`
+来注册插件提供的服务，但保持职责分离：service 负责服务管理，plugin
+负责插件生命周期管理。
 
-**设计原则**：Manager 负责插件生命周期管理（安装、激活、停用、卸载），插件只需实现事件响应钩子（onInit、onRequest 等）。
+**设计原则**：Manager
+负责插件生命周期管理（安装、激活、停用、卸载），插件只需实现事件响应钩子（onInit、onRequest
+等）。
 
 ---
 
@@ -34,13 +39,13 @@ bunx jsr add @dreamer/plugin
 
 ## 🌍 环境兼容性
 
-| 环境 | 版本要求 | 状态 |
-|------|---------|------|
-| **Deno** | 2.5+ | ✅ 完全支持 |
-| **Bun** | 1.0+ | ✅ 完全支持 |
-| **服务端** | - | ✅ 支持（兼容 Deno 和 Bun 运行时，插件系统是服务端架构模式） |
-| **客户端** | - | ❌ 不支持（浏览器环境，插件系统是服务端概念） |
-| **依赖** | `@dreamer/service@^1.0.0-beta.1` | 📦 用于注册插件提供的服务（必须） |
+| 环境       | 版本要求                         | 状态                                                         |
+| ---------- | -------------------------------- | ------------------------------------------------------------ |
+| **Deno**   | 2.5+                             | ✅ 完全支持                                                  |
+| **Bun**    | 1.0+                             | ✅ 完全支持                                                  |
+| **服务端** | -                                | ✅ 支持（兼容 Deno 和 Bun 运行时，插件系统是服务端架构模式） |
+| **客户端** | -                                | ❌ 不支持（浏览器环境，插件系统是服务端概念）                |
+| **依赖**   | `@dreamer/service@^1.0.0-beta.1` | 📦 用于注册插件提供的服务（必须）                            |
 
 **注意**：@dreamer/plugin 是纯服务端库，不提供客户端子包。
 
@@ -160,7 +165,7 @@ const authPlugin = {
 };
 
 // 方式 1：使用便捷方法（推荐）
-await pluginManager.use(authPlugin);  // 自动注册 → 安装 → 激活
+await pluginManager.use(authPlugin); // 自动注册 → 安装 → 激活
 
 // 触发应用初始化
 await pluginManager.triggerInit();
@@ -221,11 +226,11 @@ pluginManager.register(databasePlugin);
 pluginManager.register(authPlugin);
 
 // 方式 1：使用 bootstrap() 批量启动
-await pluginManager.bootstrap();  // 自动按依赖顺序安装、激活、触发 onInit
+await pluginManager.bootstrap(); // 自动按依赖顺序安装、激活、触发 onInit
 
 // 方式 2：手动安装（会自动先安装依赖）
-await pluginManager.install("auth-plugin");  // database-plugin 会先被安装
-pluginManager.activate("database-plugin");   // 必须先激活依赖
+await pluginManager.install("auth-plugin"); // database-plugin 会先被安装
+pluginManager.activate("database-plugin"); // 必须先激活依赖
 pluginManager.activate("auth-plugin");
 ```
 
@@ -423,23 +428,23 @@ const myPlugin: Plugin = {
 
 **支持的事件钩子**：
 
-| 钩子 | 触发时机 | 返回值 |
-|------|---------|--------|
-| **onInit** | 应用初始化完成（所有插件激活后） | void |
-| **onStart** | 应用服务器开始监听 | void |
-| **onStop** | 应用优雅停止 | void |
-| **onShutdown** | 应用最终关闭 | void |
-| **onRequest** | HTTP 请求处理前 | `Response \| void`（返回 Response 跳过后续处理） |
-| **onResponse** | HTTP 请求处理完成后 | void |
-| **onError** | 错误发生时 | `Response \| void`（返回自定义错误响应） |
-| **onRoute** | 路由注册时 | `RouteDefinition[]`（修改后的路由列表） |
-| **onBuild** | 构建开始前 | void |
-| **onBuildComplete** | 构建完成后 | void |
-| **onWebSocket** | WebSocket 连接建立 | void |
-| **onWebSocketClose** | WebSocket 连接关闭 | void |
-| **onSchedule** | 定时任务触发 | void |
-| **onHealthCheck** | 健康检查时 | `HealthStatus` |
-| **onHotReload** | 热重载完成（开发环境） | void |
+| 钩子                 | 触发时机                         | 返回值                                           |
+| -------------------- | -------------------------------- | ------------------------------------------------ |
+| **onInit**           | 应用初始化完成（所有插件激活后） | void                                             |
+| **onStart**          | 应用服务器开始监听               | void                                             |
+| **onStop**           | 应用优雅停止                     | void                                             |
+| **onShutdown**       | 应用最终关闭                     | void                                             |
+| **onRequest**        | HTTP 请求处理前                  | `Response \| void`（返回 Response 跳过后续处理） |
+| **onResponse**       | HTTP 请求处理完成后              | void                                             |
+| **onError**          | 错误发生时                       | `Response \| void`（返回自定义错误响应）         |
+| **onRoute**          | 路由注册时                       | `RouteDefinition[]`（修改后的路由列表）          |
+| **onBuild**          | 构建开始前                       | void                                             |
+| **onBuildComplete**  | 构建完成后                       | void                                             |
+| **onWebSocket**      | WebSocket 连接建立               | void                                             |
+| **onWebSocketClose** | WebSocket 连接关闭               | void                                             |
+| **onSchedule**       | 定时任务触发                     | void                                             |
+| **onHealthCheck**    | 健康检查时                       | `HealthStatus`                                   |
+| **onHotReload**      | 热重载完成（开发环境）           | void                                             |
 
 **Manager trigger\* 方法**（用于触发所有已激活插件的钩子）：
 
@@ -601,20 +606,20 @@ new PluginManager(
 
 **参数**：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `container` | `ServiceContainer` | 服务容器实例（用于注册插件提供的服务） |
-| `options` | `PluginManagerOptions` | 配置选项（可选） |
+| 参数        | 类型                   | 说明                                   |
+| ----------- | ---------------------- | -------------------------------------- |
+| `container` | `ServiceContainer`     | 服务容器实例（用于注册插件提供的服务） |
+| `options`   | `PluginManagerOptions` | 配置选项（可选）                       |
 
 **选项**：
 
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `autoActivate` | `boolean` | `false` | 是否自动激活已安装的插件 |
-| `continueOnError` | `boolean` | `true` | 是否在插件错误时继续执行 |
-| `enableHotReload` | `boolean` | `false` | 是否启用热加载（开发环境） |
-| `hotReloadInterval` | `number` | `1000` | 热加载监听间隔（毫秒） |
-| `resourceLimits` | `ResourceLimits` | - | 资源限制（可选） |
+| 选项                | 类型             | 默认值  | 说明                       |
+| ------------------- | ---------------- | ------- | -------------------------- |
+| `autoActivate`      | `boolean`        | `false` | 是否自动激活已安装的插件   |
+| `continueOnError`   | `boolean`        | `true`  | 是否在插件错误时继续执行   |
+| `enableHotReload`   | `boolean`        | `false` | 是否启用热加载（开发环境） |
+| `hotReloadInterval` | `number`         | `1000`  | 热加载监听间隔（毫秒）     |
+| `resourceLimits`    | `ResourceLimits` | -       | 资源限制（可选）           |
 
 **示例**：
 
@@ -627,97 +632,99 @@ const pluginManager = new PluginManager(container, {
 
 #### 便捷方法
 
-| 方法 | 说明 |
-|------|------|
-| `use(plugin)` | 自动注册 → 安装 → 激活插件 |
-| `bootstrap()` | 按依赖顺序批量启动所有已注册插件 |
-| `shutdown()` | 优雅关闭所有插件（逆序停用和卸载） |
+| 方法          | 说明                               |
+| ------------- | ---------------------------------- |
+| `use(plugin)` | 自动注册 → 安装 → 激活插件         |
+| `bootstrap()` | 按依赖顺序批量启动所有已注册插件   |
+| `shutdown()`  | 优雅关闭所有插件（逆序停用和卸载） |
 
 #### 生命周期方法
 
-| 方法 | 说明 |
-|------|------|
+| 方法                         | 说明                                       |
+| ---------------------------- | ------------------------------------------ |
 | `register(plugin, options?)` | 注册插件（options.replace 可替换已有插件） |
-| `install(name)` | 安装插件（自动解析依赖） |
-| `activate(name)` | 激活插件（检查依赖已激活） |
-| `deactivate(name)` | 停用插件 |
-| `uninstall(name)` | 卸载插件（自动清理服务） |
+| `install(name)`              | 安装插件（自动解析依赖）                   |
+| `activate(name)`             | 激活插件（检查依赖已激活）                 |
+| `deactivate(name)`           | 停用插件                                   |
+| `uninstall(name)`            | 卸载插件（自动清理服务）                   |
 
 #### 查询方法
 
-| 方法 | 说明 |
-|------|------|
-| `getPlugin(name)` | 获取插件对象 |
-| `getState(name)` | 获取插件状态 |
+| 方法                     | 说明                   |
+| ------------------------ | ---------------------- |
+| `getPlugin(name)`        | 获取插件对象           |
+| `getState(name)`         | 获取插件状态           |
 | `getRegisteredPlugins()` | 获取所有已注册插件名称 |
-| `getConfig(name)` | 获取插件配置 |
-| `getDebugInfo(name?)` | 获取插件调试信息 |
-| `getDependencyGraph()` | 获取依赖关系图 |
+| `getConfig(name)`        | 获取插件配置           |
+| `getDebugInfo(name?)`    | 获取插件调试信息       |
+| `getDependencyGraph()`   | 获取依赖关系图         |
 
 #### 配置方法
 
-| 方法 | 说明 |
-|------|------|
-| `setConfig(name, config)` | 设置插件配置 |
+| 方法                          | 说明             |
+| ----------------------------- | ---------------- |
+| `setConfig(name, config)`     | 设置插件配置     |
 | `updateConfig(name, partial)` | 部分更新插件配置 |
 
 #### 加载方法
 
-| 方法 | 说明 |
-|------|------|
-| `loadFromFile(path)` | 从文件加载插件 |
+| 方法                     | 说明               |
+| ------------------------ | ------------------ |
+| `loadFromFile(path)`     | 从文件加载插件     |
 | `loadFromDirectory(dir)` | 从目录加载所有插件 |
 
 #### 事件方法
 
-| 方法 | 说明 |
-|------|------|
-| `on(event, listener)` | 注册事件监听器 |
+| 方法                   | 说明           |
+| ---------------------- | -------------- |
+| `on(event, listener)`  | 注册事件监听器 |
 | `off(event, listener)` | 移除事件监听器 |
-| `emit(event, ...args)` | 触发事件 |
+| `emit(event, ...args)` | 触发事件       |
 
 #### 触发器方法（触发已激活插件的钩子）
 
-| 方法 | 说明 |
-|------|------|
-| `triggerInit()` | 触发 onInit 钩子 |
-| `triggerStart()` | 触发 onStart 钩子 |
-| `triggerStop()` | 触发 onStop 钩子（逆序） |
-| `triggerShutdown()` | 触发 onShutdown 钩子（逆序） |
-| `triggerRequest(ctx)` | 触发 onRequest 钩子 |
-| `triggerResponse(ctx)` | 触发 onResponse 钩子 |
-| `triggerError(error, ctx?)` | 触发 onError 钩子 |
-| `triggerRoute(routes)` | 触发 onRoute 钩子 |
-| `triggerBuild(options)` | 触发 onBuild 钩子 |
-| `triggerBuildComplete(result)` | 触发 onBuildComplete 钩子 |
-| `triggerWebSocket(ctx)` | 触发 onWebSocket 钩子 |
-| `triggerWebSocketClose(ctx)` | 触发 onWebSocketClose 钩子 |
-| `triggerSchedule(ctx)` | 触发 onSchedule 钩子 |
-| `triggerHealthCheck()` | 触发 onHealthCheck 钩子 |
-| `triggerHotReload(files)` | 触发 onHotReload 钩子 |
+| 方法                           | 说明                         |
+| ------------------------------ | ---------------------------- |
+| `triggerInit()`                | 触发 onInit 钩子             |
+| `triggerStart()`               | 触发 onStart 钩子            |
+| `triggerStop()`                | 触发 onStop 钩子（逆序）     |
+| `triggerShutdown()`            | 触发 onShutdown 钩子（逆序） |
+| `triggerRequest(ctx)`          | 触发 onRequest 钩子          |
+| `triggerResponse(ctx)`         | 触发 onResponse 钩子         |
+| `triggerError(error, ctx?)`    | 触发 onError 钩子            |
+| `triggerRoute(routes)`         | 触发 onRoute 钩子            |
+| `triggerBuild(options)`        | 触发 onBuild 钩子            |
+| `triggerBuildComplete(result)` | 触发 onBuildComplete 钩子    |
+| `triggerWebSocket(ctx)`        | 触发 onWebSocket 钩子        |
+| `triggerWebSocketClose(ctx)`   | 触发 onWebSocketClose 钩子   |
+| `triggerSchedule(ctx)`         | 触发 onSchedule 钩子         |
+| `triggerHealthCheck()`         | 触发 onHealthCheck 钩子      |
+| `triggerHotReload(files)`      | 触发 onHotReload 钩子        |
 
 #### 其他方法
 
-| 方法 | 说明 |
-|------|------|
+| 方法                          | 说明                      |
+| ----------------------------- | ------------------------- |
 | `validateDependencies(name?)` | 验证依赖（循环/缺失检测） |
-| `stopHotReload()` | 停止热加载 |
-| `dispose()` | 清理所有资源 |
+| `stopHotReload()`             | 停止热加载                |
+| `dispose()`                   | 清理所有资源              |
 
 ### Plugin 接口
 
 插件接口，定义插件的基本结构和事件钩子。
 
 ```typescript
-interface Plugin<TConfig extends Record<string, unknown> = Record<string, unknown>> {
+interface Plugin<
+  TConfig extends Record<string, unknown> = Record<string, unknown>,
+> {
   // 必需属性
-  name: string;                                    // 插件名称（唯一标识）
-  version: string;                                 // 插件版本
+  name: string; // 插件名称（唯一标识）
+  version: string; // 插件版本
 
   // 可选属性
-  dependencies?: string[];                         // 插件依赖列表
-  config?: TConfig;                                // 插件初始配置
-  validateConfig?: ConfigValidator<TConfig>;       // 配置验证函数
+  dependencies?: string[]; // 插件依赖列表
+  config?: TConfig; // 插件初始配置
+  validateConfig?: ConfigValidator<TConfig>; // 配置验证函数
   onConfigUpdate?: (newConfig: TConfig) => Promise<void> | void; // 配置更新钩子
 
   // 应用级别事件钩子（可选，由 Manager.trigger* 方法触发）
@@ -725,17 +732,50 @@ interface Plugin<TConfig extends Record<string, unknown> = Record<string, unknow
   onStart?: (container: ServiceContainer) => Promise<void> | void;
   onStop?: (container: ServiceContainer) => Promise<void> | void;
   onShutdown?: (container: ServiceContainer) => Promise<void> | void;
-  onRequest?: (ctx: RequestContext, container: ServiceContainer) => Promise<Response | void> | Response | void;
-  onResponse?: (ctx: RequestContext, container: ServiceContainer) => Promise<void> | void;
-  onError?: (error: Error, ctx: RequestContext | undefined, container: ServiceContainer) => Promise<Response | void> | Response | void;
-  onRoute?: (routes: RouteDefinition[], container: ServiceContainer) => Promise<RouteDefinition[]> | RouteDefinition[];
-  onBuild?: (options: BuildOptions, container: ServiceContainer) => Promise<void> | void;
-  onBuildComplete?: (result: BuildResult, container: ServiceContainer) => Promise<void> | void;
-  onWebSocket?: (ctx: WebSocketContext, container: ServiceContainer) => Promise<void> | void;
-  onWebSocketClose?: (ctx: WebSocketContext, container: ServiceContainer) => Promise<void> | void;
-  onSchedule?: (ctx: ScheduleContext, container: ServiceContainer) => Promise<void> | void;
-  onHealthCheck?: (container: ServiceContainer) => Promise<HealthStatus> | HealthStatus;
-  onHotReload?: (changedFiles: string[], container: ServiceContainer) => Promise<void> | void;
+  onRequest?: (
+    ctx: RequestContext,
+    container: ServiceContainer,
+  ) => Promise<Response | void> | Response | void;
+  onResponse?: (
+    ctx: RequestContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  onError?: (
+    error: Error,
+    ctx: RequestContext | undefined,
+    container: ServiceContainer,
+  ) => Promise<Response | void> | Response | void;
+  onRoute?: (
+    routes: RouteDefinition[],
+    container: ServiceContainer,
+  ) => Promise<RouteDefinition[]> | RouteDefinition[];
+  onBuild?: (
+    options: BuildOptions,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  onBuildComplete?: (
+    result: BuildResult,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  onWebSocket?: (
+    ctx: WebSocketContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  onWebSocketClose?: (
+    ctx: WebSocketContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  onSchedule?: (
+    ctx: ScheduleContext,
+    container: ServiceContainer,
+  ) => Promise<void> | void;
+  onHealthCheck?: (
+    container: ServiceContainer,
+  ) => Promise<HealthStatus> | HealthStatus;
+  onHotReload?: (
+    changedFiles: string[],
+    container: ServiceContainer,
+  ) => Promise<void> | void;
 }
 ```
 
@@ -745,21 +785,21 @@ interface Plugin<TConfig extends Record<string, unknown> = Record<string, unknow
 
 ```typescript
 type PluginState =
-  | "registered"   // 已注册
-  | "installed"    // 已安装
-  | "active"       // 已激活
-  | "inactive"     // 已停用
+  | "registered" // 已注册
+  | "installed" // 已安装
+  | "active" // 已激活
+  | "inactive" // 已停用
   | "uninstalled"; // 已卸载
 ```
 
 ### 工具函数
 
-| 函数 | 说明 |
-|------|------|
-| `detectCircularDependency(plugins)` | 检测循环依赖 |
-| `detectMissingDependencies(plugins)` | 检测缺失依赖 |
-| `topologicalSort(plugins, names)` | 拓扑排序（计算加载顺序） |
-| `loadPluginFromFile(path)` | 从文件加载插件 |
+| 函数                                 | 说明                     |
+| ------------------------------------ | ------------------------ |
+| `detectCircularDependency(plugins)`  | 检测循环依赖             |
+| `detectMissingDependencies(plugins)` | 检测缺失依赖             |
+| `topologicalSort(plugins, names)`    | 拓扑排序（计算加载顺序） |
+| `loadPluginFromFile(path)`           | 从文件加载插件           |
 
 ---
 
@@ -769,9 +809,9 @@ type PluginState =
 
 ```typescript
 interface ResourceLimits {
-  maxMemory?: number;  // 内存限制（MB，可选）
-  maxCpu?: number;     // CPU 限制（百分比，可选）
-  timeout?: number;    // 超时时间（毫秒，可选）
+  maxMemory?: number; // 内存限制（MB，可选）
+  maxCpu?: number; // CPU 限制（百分比，可选）
+  timeout?: number; // 超时时间（毫秒，可选）
 }
 
 const pluginManager = new PluginManager(container, {
@@ -808,13 +848,13 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 ## 📊 测试报告
 
-| 指标 | 数值 |
-|------|------|
-| 测试时间 | 2026-01-29 |
-| 测试文件数 | 12 |
-| 测试用例总数 | 159 |
-| 通过率 | 100% |
-| 执行时间 | ~11s |
+| 指标         | 数值       |
+| ------------ | ---------- |
+| 测试时间     | 2026-01-29 |
+| 测试文件数   | 12         |
+| 测试用例总数 | 159        |
+| 通过率       | 100%       |
+| 执行时间     | ~11s       |
 
 **测试覆盖**：
 
@@ -831,9 +871,11 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 ## 📝 注意事项
 
-1. **服务容器依赖**：插件系统依赖 `@dreamer/service` 来注册插件提供的服务，必须提供 ServiceContainer 实例。
+1. **服务容器依赖**：插件系统依赖 `@dreamer/service`
+   来注册插件提供的服务，必须提供 ServiceContainer 实例。
 
-2. **插件状态管理**：插件状态转换必须按顺序进行（registered → installed → active → inactive → uninstalled），状态转换失败时会自动回滚。
+2. **插件状态管理**：插件状态转换必须按顺序进行（registered → installed → active
+   → inactive → uninstalled），状态转换失败时会自动回滚。
 
 3. **依赖管理**：
    - 插件依赖会在安装时自动解析和安装
