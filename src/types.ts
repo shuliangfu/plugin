@@ -316,7 +316,6 @@ export interface SocketIOContext {
  */
 export type SocketContext = WebSocketContext | SocketIOContext;
 
-
 /**
  * 定时任务上下文类型
  */
@@ -438,7 +437,6 @@ export interface AppEventHooks {
     ctx: SocketContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
-
 
   // ==================== 定时任务事件 ====================
 

@@ -119,7 +119,10 @@ const chatPlugin: Plugin = {
    * 初始化时注册连接管理器服务
    */
   async onInit(container: ServiceContainer) {
-    container.registerSingleton("connectionManager", () => new ConnectionManager());
+    container.registerSingleton(
+      "connectionManager",
+      () => new ConnectionManager(),
+    );
     console.log("[ChatPlugin] ✓ 连接管理器已注册");
   },
 
@@ -133,7 +136,8 @@ const chatPlugin: Plugin = {
     if (isWebSocketContext(ctx)) {
       // WebSocket 连接
       const url = new URL(ctx.request.url);
-      const username = url.searchParams.get("username") || `用户${ctx.connectionId.slice(0, 6)}`;
+      const username = url.searchParams.get("username") ||
+        `用户${ctx.connectionId.slice(0, 6)}`;
 
       connManager.add(ctx, username);
 
@@ -179,7 +183,9 @@ const chatPlugin: Plugin = {
         rooms: Array.from(ctx.rooms),
       });
 
-      console.log(`[ChatPlugin] ✓ Socket.IO 用户 ${username} 已连接 (命名空间: ${ctx.namespace})`);
+      console.log(
+        `[ChatPlugin] ✓ Socket.IO 用户 ${username} 已连接 (命名空间: ${ctx.namespace})`,
+      );
     }
   },
 
@@ -192,7 +198,9 @@ const chatPlugin: Plugin = {
 
     if (connInfo) {
       connManager.remove(ctx.connectionId);
-      console.log(`[ChatPlugin] ◌ ${connInfo.type} 用户 ${connInfo.username} 已断开`);
+      console.log(
+        `[ChatPlugin] ◌ ${connInfo.type} 用户 ${connInfo.username} 已断开`,
+      );
     }
   },
 };
@@ -266,7 +274,10 @@ function createMockWebSocket(): WebSocket {
 /**
  * 创建模拟的 Socket.IO Socket
  */
-function createMockSocketIO(id: string, namespace: string = "/"): SocketIOSocket {
+function createMockSocketIO(
+  id: string,
+  namespace: string = "/",
+): SocketIOSocket {
   const listeners = new Map<string, ((...args: unknown[]) => void)[]>();
 
   return {
@@ -348,7 +359,10 @@ async function main() {
   // 3. 模拟 WebSocket 连接
   console.log("\n--- 模拟 WebSocket 连接 ---");
   const ws1 = createMockWebSocket();
-  const wsCtx1 = createWebSocketContext(ws1, new Request("ws://localhost/ws/chat?username=Alice"));
+  const wsCtx1 = createWebSocketContext(
+    ws1,
+    new Request("ws://localhost/ws/chat?username=Alice"),
+  );
   await pluginManager.triggerSocket(wsCtx1);
 
   // 4. 模拟 Socket.IO 连接

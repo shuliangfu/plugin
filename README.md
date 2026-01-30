@@ -428,23 +428,23 @@ const myPlugin: Plugin = {
 
 **支持的事件钩子**：
 
-| 钩子                 | 触发时机                         | 返回值                                           |
-| -------------------- | -------------------------------- | ------------------------------------------------ |
-| **onInit**           | 应用初始化完成（所有插件激活后） | void                                             |
-| **onStart**          | 应用服务器开始监听               | void                                             |
-| **onStop**           | 应用优雅停止                     | void                                             |
-| **onShutdown**       | 应用最终关闭                     | void                                             |
-| **onRequest**        | HTTP 请求处理前                  | `Response \| void`（返回 Response 跳过后续处理） |
-| **onResponse**       | HTTP 请求处理完成后              | void                                             |
-| **onError**          | 错误发生时                       | `Response \| void`（返回自定义错误响应）         |
-| **onRoute**          | 路由注册时                       | `RouteDefinition[]`（修改后的路由列表）          |
-| **onBuild**          | 构建开始前                       | void                                             |
-| **onBuildComplete**  | 构建完成后                       | void                                             |
-| **onSocket**         | Socket 连接建立（WebSocket/Socket.IO） | void                                       |
-| **onSocketClose**    | Socket 连接关闭                  | void                                             |
-| **onSchedule**       | 定时任务触发                     | void                                             |
-| **onHealthCheck**    | 健康检查时                       | `HealthStatus`                                   |
-| **onHotReload**      | 热重载完成（开发环境）           | void                                             |
+| 钩子                | 触发时机                               | 返回值                                           |
+| ------------------- | -------------------------------------- | ------------------------------------------------ |
+| **onInit**          | 应用初始化完成（所有插件激活后）       | void                                             |
+| **onStart**         | 应用服务器开始监听                     | void                                             |
+| **onStop**          | 应用优雅停止                           | void                                             |
+| **onShutdown**      | 应用最终关闭                           | void                                             |
+| **onRequest**       | HTTP 请求处理前                        | `Response \| void`（返回 Response 跳过后续处理） |
+| **onResponse**      | HTTP 请求处理完成后                    | void                                             |
+| **onError**         | 错误发生时                             | `Response \| void`（返回自定义错误响应）         |
+| **onRoute**         | 路由注册时                             | `RouteDefinition[]`（修改后的路由列表）          |
+| **onBuild**         | 构建开始前                             | void                                             |
+| **onBuildComplete** | 构建完成后                             | void                                             |
+| **onSocket**        | Socket 连接建立（WebSocket/Socket.IO） | void                                             |
+| **onSocketClose**   | Socket 连接关闭                        | void                                             |
+| **onSchedule**      | 定时任务触发                           | void                                             |
+| **onHealthCheck**   | 健康检查时                             | `HealthStatus`                                   |
+| **onHotReload**     | 热重载完成（开发环境）                 | void                                             |
 
 **Manager trigger\* 方法**（用于触发所有已激活插件的钩子）：
 
@@ -683,23 +683,23 @@ const pluginManager = new PluginManager(container, {
 
 #### 触发器方法（触发已激活插件的钩子）
 
-| 方法                           | 说明                         |
-| ------------------------------ | ---------------------------- |
-| `triggerInit()`                | 触发 onInit 钩子             |
-| `triggerStart()`               | 触发 onStart 钩子            |
-| `triggerStop()`                | 触发 onStop 钩子（逆序）     |
-| `triggerShutdown()`            | 触发 onShutdown 钩子（逆序） |
-| `triggerRequest(ctx)`          | 触发 onRequest 钩子          |
-| `triggerResponse(ctx)`         | 触发 onResponse 钩子         |
-| `triggerError(error, ctx?)`    | 触发 onError 钩子            |
-| `triggerRoute(routes)`         | 触发 onRoute 钩子            |
-| `triggerBuild(options)`        | 触发 onBuild 钩子            |
-| `triggerBuildComplete(result)` | 触发 onBuildComplete 钩子    |
+| 方法                           | 说明                                      |
+| ------------------------------ | ----------------------------------------- |
+| `triggerInit()`                | 触发 onInit 钩子                          |
+| `triggerStart()`               | 触发 onStart 钩子                         |
+| `triggerStop()`                | 触发 onStop 钩子（逆序）                  |
+| `triggerShutdown()`            | 触发 onShutdown 钩子（逆序）              |
+| `triggerRequest(ctx)`          | 触发 onRequest 钩子                       |
+| `triggerResponse(ctx)`         | 触发 onResponse 钩子                      |
+| `triggerError(error, ctx?)`    | 触发 onError 钩子                         |
+| `triggerRoute(routes)`         | 触发 onRoute 钩子                         |
+| `triggerBuild(options)`        | 触发 onBuild 钩子                         |
+| `triggerBuildComplete(result)` | 触发 onBuildComplete 钩子                 |
 | `triggerSocket(ctx)`           | 触发 onSocket 钩子（WebSocket/Socket.IO） |
-| `triggerSocketClose(ctx)`      | 触发 onSocketClose 钩子      |
-| `triggerSchedule(ctx)`         | 触发 onSchedule 钩子         |
-| `triggerHealthCheck()`         | 触发 onHealthCheck 钩子      |
-| `triggerHotReload(files)`      | 触发 onHotReload 钩子        |
+| `triggerSocketClose(ctx)`      | 触发 onSocketClose 钩子                   |
+| `triggerSchedule(ctx)`         | 触发 onSchedule 钩子                      |
+| `triggerHealthCheck()`         | 触发 onHealthCheck 钩子                   |
+| `triggerHotReload(files)`      | 触发 onHotReload 钩子                     |
 
 #### 其他方法
 
@@ -758,7 +758,7 @@ interface Plugin<
     container: ServiceContainer,
   ) => Promise<void> | void;
   onSocket?: (
-    ctx: SocketContext,  // WebSocketContext | SocketIOContext
+    ctx: SocketContext, // WebSocketContext | SocketIOContext
     container: ServiceContainer,
   ) => Promise<void> | void;
   onSocketClose?: (

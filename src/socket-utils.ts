@@ -145,7 +145,9 @@ export function createSocketContext(
  * @param ctx - Socket 上下文
  * @returns 是否为 WebSocket 类型
  */
-export function isWebSocketContext(ctx: SocketContext): ctx is WebSocketContext {
+export function isWebSocketContext(
+  ctx: SocketContext,
+): ctx is WebSocketContext {
   return ctx.type === "websocket";
 }
 
