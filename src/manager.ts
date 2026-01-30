@@ -28,7 +28,7 @@ import type {
   ResourceLimits,
   RouteDefinition,
   ScheduleContext,
-  WebSocketContext,
+  SocketContext,
 } from "./types.ts";
 
 /**
@@ -1187,24 +1187,30 @@ export class PluginManager {
   }
 
   /**
-   * 触发 onWebSocket 钩子
-   * 应在 WebSocket 连接建立时调用
+   * 触发 onSocket 钩子
+   * 应在 Socket（WebSocket 或 Socket.IO）连接建立时调用
    *
-   * @param ctx WebSocket 上下文
+   * @param ctx Socket 上下文
    *
    * @example
    * ```typescript
+   * // WebSocket
    * wss.on('connection', async (socket, request) => {
-   *   await pluginManager.triggerWebSocket({ socket, request });
+   *   await pluginManager.triggerSocket(createSocketContext('websocket', socket, request));
+   * });
+   *
+   * // Socket.IO
+   * io.on('connection', async (socket) => {
+   *   await pluginManager.triggerSocket(createSocketContext('socketio', socket));
    * });
    * ```
    */
-  async triggerWebSocket(ctx: WebSocketContext): Promise<void> {
+  async triggerSocket(ctx: SocketContext): Promise<void> {
     const activePlugins = this.getActivePlugins();
     for (const plugin of activePlugins) {
-      if (plugin.onWebSocket) {
+      if (plugin.onSocket) {
         try {
-          await plugin.onWebSocket(ctx, this.container);
+          await plugin.onSocket(ctx, this.container);
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           this.pluginErrors.set(plugin.name, err);
@@ -1215,28 +1221,34 @@ export class PluginManager {
         }
       }
     }
-    this.eventEmitter.emit("app:websocket", ctx);
+    this.eventEmitter.emit("app:socket", ctx);
   }
 
   /**
-   * 触发 onWebSocketClose 钩子
-   * 应在 WebSocket 连接关闭时调用
+   * 触发 onSocketClose 钩子
+   * 应在 Socket（WebSocket 或 Socket.IO）连接关闭时调用
    *
-   * @param ctx WebSocket 上下文
+   * @param ctx Socket 上下文
    *
    * @example
    * ```typescript
+   * // WebSocket
    * socket.on('close', async () => {
-   *   await pluginManager.triggerWebSocketClose({ socket, request });
+   *   await pluginManager.triggerSocketClose(ctx);
+   * });
+   *
+   * // Socket.IO
+   * socket.on('disconnect', async () => {
+   *   await pluginManager.triggerSocketClose(ctx);
    * });
    * ```
    */
-  async triggerWebSocketClose(ctx: WebSocketContext): Promise<void> {
+  async triggerSocketClose(ctx: SocketContext): Promise<void> {
     const activePlugins = this.getActivePlugins();
     for (const plugin of activePlugins) {
-      if (plugin.onWebSocketClose) {
+      if (plugin.onSocketClose) {
         try {
-          await plugin.onWebSocketClose(ctx, this.container);
+          await plugin.onSocketClose(ctx, this.container);
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           this.pluginErrors.set(plugin.name, err);
@@ -1247,7 +1259,7 @@ export class PluginManager {
         }
       }
     }
-    this.eventEmitter.emit("app:websocket:close", ctx);
+    this.eventEmitter.emit("app:socket:close", ctx);
   }
 
   /**

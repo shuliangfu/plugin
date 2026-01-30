@@ -7,7 +7,7 @@
 | 测试库版本       | 1.0.0-beta.2                            |
 | 运行时适配器版本 | @dreamer/runtime-adapter@^1.0.0-beta.22 |
 | 测试框架         | @dreamer/test@^1.0.0-beta.39            |
-| 测试时间         | 2026-01-29                              |
+| 测试时间         | 2026-01-30                              |
 | 测试环境         | Deno 2.x / Bun 1.x                      |
 
 ---
@@ -126,7 +126,7 @@
 - ✅ 拒绝停用不存在的插件
 - ✅ 拒绝卸载不存在的插件
 - ✅ 在构建过程中调用插件钩子
-- ✅ 处理 WebSocket 连接和关闭事件
+- ✅ 处理 Socket 连接和关闭事件（WebSocket/Socket.IO）
 - ✅ 触发定时任务钩子
 - ✅ 在配置更新时调用 onConfigUpdate 钩子
 - ✅ 返回完整的依赖关系图
@@ -182,13 +182,13 @@
 
 - ✅ 应该调用 onBuildComplete 钩子
 
-#### 2.11 triggerWebSocket 钩子
+#### 2.11 triggerSocket 钩子
 
-- ✅ 应该调用 onWebSocket 钩子
+- ✅ 应该调用 onSocket 钩子（支持 WebSocket 和 Socket.IO）
 
-#### 2.12 triggerWebSocketClose 钩子
+#### 2.12 triggerSocketClose 钩子
 
-- ✅ 应该调用 onWebSocketClose 钩子
+- ✅ 应该调用 onSocketClose 钩子
 
 #### 2.13 triggerSchedule 钩子
 
@@ -410,8 +410,8 @@
 | PluginManager | triggerRoute()          | ✅       |
 | PluginManager | triggerBuild()          | ✅       |
 | PluginManager | triggerBuildComplete()  | ✅       |
-| PluginManager | triggerWebSocket()      | ✅       |
-| PluginManager | triggerWebSocketClose() | ✅       |
+| PluginManager | triggerSocket()         | ✅       |
+| PluginManager | triggerSocketClose()    | ✅       |
 | PluginManager | triggerSchedule()       | ✅       |
 | PluginManager | triggerHealthCheck()    | ✅       |
 | PluginManager | triggerHotReload()      | ✅       |
@@ -487,5 +487,5 @@
 
 ---
 
-**报告生成时间**: 2026-01-29 **测试执行人**: 自动化测试系统 **审核状态**: ✅
+**报告生成时间**: 2026-01-30 **测试执行人**: 自动化测试系统 **审核状态**: ✅
 已通过

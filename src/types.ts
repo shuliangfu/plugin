@@ -126,20 +126,196 @@ export interface HealthStatus {
 }
 
 /**
+ * Socket 类型枚举
+ *
+ * 用于区分 WebSocket 和 Socket.IO 连接
+ */
+export type SocketType = "websocket" | "socketio";
+
+/**
+ * Socket.IO Socket 接口
+ *
+ * Socket.IO 连接的操作接口
+ */
+export interface SocketIOSocket {
+  /** Socket ID */
+  id: string;
+  /** 是否已连接 */
+  connected: boolean;
+  /** 当前加入的房间 */
+  rooms: Set<string>;
+  /** 命名空间 */
+  nsp: { name: string };
+  /** 握手信息 */
+  handshake?: {
+    url?: string;
+    headers?: Record<string, string>;
+    query?: Record<string, string>;
+    auth?: Record<string, unknown>;
+  };
+
+  /**
+   * 发送事件
+   *
+   * @param event - 事件名称
+   * @param args - 参数
+   */
+  emit(event: string, ...args: unknown[]): boolean;
+
+  /**
+   * 监听事件
+   *
+   * @param event - 事件名称
+   * @param listener - 事件处理函数
+   */
+  on(event: string, listener: (...args: unknown[]) => void): this;
+
+  /**
+   * 单次监听
+   *
+   * @param event - 事件名称
+   * @param listener - 事件处理函数
+   */
+  once(event: string, listener: (...args: unknown[]) => void): this;
+
+  /**
+   * 移除监听
+   *
+   * @param event - 事件名称
+   * @param listener - 事件处理函数（可选）
+   */
+  off(event: string, listener?: (...args: unknown[]) => void): this;
+
+  /**
+   * 加入房间
+   *
+   * @param room - 房间名称
+   */
+  join(room: string | string[]): void;
+
+  /**
+   * 离开房间
+   *
+   * @param room - 房间名称
+   */
+  leave(room: string): void;
+
+  /**
+   * 向房间发送消息
+   *
+   * @param room - 房间名称
+   */
+  to(room: string): { emit(event: string, ...args: unknown[]): boolean };
+
+  /**
+   * 向所有人广播（不包括自己）
+   */
+  broadcast: { emit(event: string, ...args: unknown[]): boolean };
+
+  /**
+   * 断开连接
+   *
+   * @param close - 是否关闭底层连接
+   */
+  disconnect(close?: boolean): this;
+}
+
+/**
  * WebSocket 上下文类型
+ *
+ * 原生 WebSocket 连接上下文
  */
 export interface WebSocketContext {
-  /** WebSocket 实例 */
+  /**
+   * Socket 类型标识
+   */
+  type: "websocket";
+
+  /**
+   * 连接 ID（自动生成的 UUID）
+   */
+  connectionId: string;
+
+  /**
+   * 原生 WebSocket 实例
+   */
   socket: WebSocket;
-  /** 原始请求 */
+
+  /**
+   * 握手请求
+   */
   request: Request;
-  /** 连接 ID */
-  connectionId?: string;
-  /** 用户信息（如果已认证） */
+
+  /**
+   * 用户信息（如果已认证）
+   */
   user?: unknown;
-  /** 扩展属性 */
+
+  /**
+   * 扩展属性
+   */
   [key: string]: unknown;
 }
+
+/**
+ * Socket.IO 上下文类型
+ *
+ * Socket.IO 连接上下文
+ */
+export interface SocketIOContext {
+  /**
+   * Socket 类型标识
+   */
+  type: "socketio";
+
+  /**
+   * 连接 ID（即 socket.id）
+   */
+  connectionId: string;
+
+  /**
+   * Socket.IO Socket 实例
+   */
+  socket: SocketIOSocket;
+
+  /**
+   * 命名空间
+   */
+  namespace: string;
+
+  /**
+   * 当前加入的房间列表
+   */
+  rooms: Set<string>;
+
+  /**
+   * 握手信息
+   */
+  handshake?: {
+    url?: string;
+    headers?: Record<string, string>;
+    query?: Record<string, string>;
+    auth?: Record<string, unknown>;
+  };
+
+  /**
+   * 用户信息（如果已认证）
+   */
+  user?: unknown;
+
+  /**
+   * 扩展属性
+   */
+  [key: string]: unknown;
+}
+
+/**
+ * Socket 上下文联合类型
+ *
+ * 可以是 WebSocket 或 Socket.IO 连接
+ */
+export type SocketContext = WebSocketContext | SocketIOContext;
+
 
 /**
  * 定时任务上下文类型
@@ -236,24 +412,33 @@ export interface AppEventHooks {
     container: ServiceContainer,
   ) => Promise<void> | void;
 
-  // ==================== WebSocket 事件 ====================
+  // ==================== Socket 事件（兼容 WebSocket 和 Socket.IO） ====================
 
   /**
-   * WebSocket 连接建立时调用
+   * Socket 连接建立时调用
+   * 同时支持 WebSocket 和 Socket.IO 连接
    * 可以进行认证、记录连接等
+   *
+   * @param ctx - Socket 上下文，包含统一的 socket 接口
+   * @param container - 服务容器
    */
-  onWebSocket?: (
-    ctx: WebSocketContext,
+  onSocket?: (
+    ctx: SocketContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
 
   /**
-   * WebSocket 连接关闭时调用
+   * Socket 连接关闭时调用
+   * 同时支持 WebSocket 和 Socket.IO 连接
+   *
+   * @param ctx - Socket 上下文
+   * @param container - 服务容器
    */
-  onWebSocketClose?: (
-    ctx: WebSocketContext,
+  onSocketClose?: (
+    ctx: SocketContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
+
 
   // ==================== 定时任务事件 ====================
 

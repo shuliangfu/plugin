@@ -1006,8 +1006,8 @@ describe("综合测试", () => {
     });
   });
 
-  describe("triggerWebSocket() 和 triggerWebSocketClose()", () => {
-    it("应该处理 WebSocket 连接和关闭事件", async () => {
+  describe("triggerSocket() 和 triggerSocketClose()", () => {
+    it("应该处理 Socket 连接和关闭事件", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
       let connectCalled = false;
@@ -1016,11 +1016,11 @@ describe("综合测试", () => {
       const plugin: Plugin = {
         name: "ws-plugin",
         version: "1.0.0",
-        async onWebSocket(ctx) {
+        async onSocket(ctx) {
           connectCalled = true;
           expect(ctx.connectionId).toBe("conn-123");
         },
-        async onWebSocketClose(ctx) {
+        async onSocketClose(ctx) {
           closeCalled = true;
           expect(ctx.connectionId).toBe("conn-123");
         },
@@ -1031,13 +1031,14 @@ describe("综合测试", () => {
       // 创建 mock WebSocket context
       const mockSocket = {} as WebSocket;
       const ctx = {
+        type: "websocket" as const,
         socket: mockSocket,
         request: new Request("http://localhost/ws"),
         connectionId: "conn-123",
       };
 
-      await manager.triggerWebSocket(ctx);
-      await manager.triggerWebSocketClose(ctx);
+      await manager.triggerSocket(ctx);
+      await manager.triggerSocketClose(ctx);
 
       expect(connectCalled).toBe(true);
       expect(closeCalled).toBe(true);

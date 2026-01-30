@@ -94,7 +94,7 @@ bunx jsr add @dreamer/plugin
   - **HTTP 请求**：onRequest、onResponse、onError
   - **路由**：onRoute（动态修改路由）
   - **构建**：onBuild、onBuildComplete
-  - **WebSocket**：onWebSocket、onWebSocketClose
+  - **Socket**：onSocket、onSocketClose（同时支持 WebSocket 和 Socket.IO）
   - **定时任务**：onSchedule
   - **健康检查**：onHealthCheck
   - **热重载**：onHotReload（开发环境）
@@ -440,8 +440,8 @@ const myPlugin: Plugin = {
 | **onRoute**          | 路由注册时                       | `RouteDefinition[]`（修改后的路由列表）          |
 | **onBuild**          | 构建开始前                       | void                                             |
 | **onBuildComplete**  | 构建完成后                       | void                                             |
-| **onWebSocket**      | WebSocket 连接建立               | void                                             |
-| **onWebSocketClose** | WebSocket 连接关闭               | void                                             |
+| **onSocket**         | Socket 连接建立（WebSocket/Socket.IO） | void                                       |
+| **onSocketClose**    | Socket 连接关闭                  | void                                             |
 | **onSchedule**       | 定时任务触发                     | void                                             |
 | **onHealthCheck**    | 健康检查时                       | `HealthStatus`                                   |
 | **onHotReload**      | 热重载完成（开发环境）           | void                                             |
@@ -467,9 +467,9 @@ const routes = await pluginManager.triggerRoute(initialRoutes);
 await pluginManager.triggerBuild({ mode: "prod", target: "client" });
 await pluginManager.triggerBuildComplete({ outputFiles: [...] });
 
-// WebSocket
-await pluginManager.triggerWebSocket(ctx);
-await pluginManager.triggerWebSocketClose(ctx);
+// Socket（WebSocket 或 Socket.IO）
+await pluginManager.triggerSocket(ctx);      // ctx: SocketContext
+await pluginManager.triggerSocketClose(ctx);
 
 // 定时任务
 await pluginManager.triggerSchedule({ taskName: "cleanup", schedule: "0 * * * *" });
@@ -695,8 +695,8 @@ const pluginManager = new PluginManager(container, {
 | `triggerRoute(routes)`         | 触发 onRoute 钩子            |
 | `triggerBuild(options)`        | 触发 onBuild 钩子            |
 | `triggerBuildComplete(result)` | 触发 onBuildComplete 钩子    |
-| `triggerWebSocket(ctx)`        | 触发 onWebSocket 钩子        |
-| `triggerWebSocketClose(ctx)`   | 触发 onWebSocketClose 钩子   |
+| `triggerSocket(ctx)`           | 触发 onSocket 钩子（WebSocket/Socket.IO） |
+| `triggerSocketClose(ctx)`      | 触发 onSocketClose 钩子      |
 | `triggerSchedule(ctx)`         | 触发 onSchedule 钩子         |
 | `triggerHealthCheck()`         | 触发 onHealthCheck 钩子      |
 | `triggerHotReload(files)`      | 触发 onHotReload 钩子        |
@@ -757,12 +757,12 @@ interface Plugin<
     result: BuildResult,
     container: ServiceContainer,
   ) => Promise<void> | void;
-  onWebSocket?: (
-    ctx: WebSocketContext,
+  onSocket?: (
+    ctx: SocketContext,  // WebSocketContext | SocketIOContext
     container: ServiceContainer,
   ) => Promise<void> | void;
-  onWebSocketClose?: (
-    ctx: WebSocketContext,
+  onSocketClose?: (
+    ctx: SocketContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
   onSchedule?: (
@@ -850,7 +850,7 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 | 指标         | 数值       |
 | ------------ | ---------- |
-| 测试时间     | 2026-01-29 |
+| 测试时间     | 2026-01-30 |
 | 测试文件数   | 12         |
 | 测试用例总数 | 159        |
 | 通过率       | 100%       |

@@ -55,6 +55,11 @@ export type {
   ResourceLimits,
   RouteDefinition,
   ScheduleContext,
+  // Socket 类型（兼容 WebSocket 和 Socket.IO）
+  SocketContext,
+  SocketIOContext,
+  SocketIOSocket,
+  SocketType,
   WebSocketContext,
 } from "./types.ts";
 
@@ -64,6 +69,15 @@ export {
   detectMissingDependencies,
   topologicalSort,
 } from "./dependency-resolver.ts";
+
+// 导出 Socket 工具函数
+export {
+  createSocketContext,
+  createSocketIOContext,
+  createWebSocketContext,
+  isSocketIOContext,
+  isWebSocketContext,
+} from "./socket-utils.ts";
 
 // 导出加载器
 export { loadPluginFromFile } from "./loader.ts";

@@ -12,6 +12,7 @@ import type {
   RequestContext,
   RouteDefinition,
   ScheduleContext,
+  SocketContext,
   WebSocketContext,
 } from "../src/types.ts";
 
@@ -44,6 +45,7 @@ function createMockWebSocketContext(): WebSocketContext {
   } as unknown as WebSocket;
 
   return {
+    type: "websocket",
     socket: mockSocket,
     request: new Request("http://example.com/ws"),
     connectionId: "test-connection-id",
@@ -510,21 +512,23 @@ describe("应用级别事件钩子 - Manager trigger* 方法", () => {
     });
   });
 
-  // ==================== WebSocket 事件测试 ====================
+  // ==================== Socket 事件测试 ====================
 
-  describe("triggerWebSocket", () => {
-    it("应该触发所有已激活插件的 onWebSocket 钩子", async () => {
+  describe("triggerSocket", () => {
+    it("应该触发所有已激活插件的 onSocket 钩子", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
-      let onWebSocketCalled = false;
+      let onSocketCalled = false;
 
       const plugin: Plugin = {
         name: "test-plugin",
         version: "1.0.0",
-        async onWebSocket(ctx) {
-          onWebSocketCalled = true;
-          expect(ctx.socket).toBeDefined();
+        async onSocket(ctx: SocketContext) {
+          onSocketCalled = true;
           expect(ctx.connectionId).toBe("test-connection-id");
+          if (ctx.type === "websocket") {
+            expect(ctx.socket).toBeDefined();
+          }
         },
       };
 
@@ -533,23 +537,23 @@ describe("应用级别事件钩子 - Manager trigger* 方法", () => {
       await manager.activate("test-plugin");
 
       const ctx = createMockWebSocketContext();
-      await manager.triggerWebSocket(ctx);
+      await manager.triggerSocket(ctx);
 
-      expect(onWebSocketCalled).toBe(true);
+      expect(onSocketCalled).toBe(true);
     });
   });
 
-  describe("triggerWebSocketClose", () => {
-    it("应该触发所有已激活插件的 onWebSocketClose 钩子", async () => {
+  describe("triggerSocketClose", () => {
+    it("应该触发所有已激活插件的 onSocketClose 钩子", async () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
-      let onWebSocketCloseCalled = false;
+      let onSocketCloseCalled = false;
 
       const plugin: Plugin = {
         name: "test-plugin",
         version: "1.0.0",
-        async onWebSocketClose() {
-          onWebSocketCloseCalled = true;
+        async onSocketClose() {
+          onSocketCloseCalled = true;
         },
       };
 
@@ -558,9 +562,9 @@ describe("应用级别事件钩子 - Manager trigger* 方法", () => {
       await manager.activate("test-plugin");
 
       const ctx = createMockWebSocketContext();
-      await manager.triggerWebSocketClose(ctx);
+      await manager.triggerSocketClose(ctx);
 
-      expect(onWebSocketCloseCalled).toBe(true);
+      expect(onSocketCloseCalled).toBe(true);
     });
   });
 
