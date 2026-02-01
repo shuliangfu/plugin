@@ -5,7 +5,7 @@
 
 [![JSR](https://jsr.io/badges/@dreamer/plugin)](https://jsr.io/@dreamer/plugin)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
-[![Tests](https://img.shields.io/badge/tests-159%20passed-brightgreen)](./TEST_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-157%20passed-brightgreen)](./TEST_REPORT.md)
 
 ---
 
@@ -95,7 +95,6 @@ bunx jsr add @dreamer/plugin
   - **路由**：onRoute（动态修改路由）
   - **构建**：onBuild、onBuildComplete
   - **Socket**：onSocket、onSocketClose（同时支持 WebSocket 和 Socket.IO）
-  - **定时任务**：onSchedule
   - **健康检查**：onHealthCheck
   - **热重载**：onHotReload（开发环境）
 
@@ -442,7 +441,6 @@ const myPlugin: Plugin = {
 | **onBuildComplete** | 构建完成后                             | void                                             |
 | **onSocket**        | Socket 连接建立（WebSocket/Socket.IO） | void                                             |
 | **onSocketClose**   | Socket 连接关闭                        | void                                             |
-| **onSchedule**      | 定时任务触发                           | void                                             |
 | **onHealthCheck**   | 健康检查时                             | `HealthStatus`                                   |
 | **onHotReload**     | 热重载完成（开发环境）                 | void                                             |
 
@@ -471,9 +469,6 @@ await pluginManager.triggerBuildComplete({ outputFiles: [...] });
 await pluginManager.triggerSocket(ctx);      // ctx: SocketContext
 await pluginManager.triggerSocketClose(ctx);
 
-// 定时任务
-await pluginManager.triggerSchedule({ taskName: "cleanup", schedule: "0 * * * *" });
-
 // 健康检查
 const status = await pluginManager.triggerHealthCheck();
 
@@ -489,6 +484,68 @@ await pluginManager.triggerHotReload(["src/app.ts"]);
 4. `onRequest` 返回 `Response` 时，后续插件的 `onRequest` 不会执行
 5. `onHealthCheck` 会聚合所有插件的健康状态
 6. 所有事件钩子都是可选的，插件可以选择性地实现需要的事件
+7. **Socket 钩子需要手动触发**：`@dreamer/dweb` 框架不再内置 WebSocket/Socket.IO 支持，需要自己实现并手动调用 `triggerSocket`/`triggerSocketClose`（见下方示例）
+
+#### Socket 钩子手动触发示例
+
+`@dreamer/dweb` 框架已移除内置的 WebSocket 支持，如需使用 `onSocket` 钩子，需要自己创建 Socket.IO 服务并手动触发：
+
+```typescript
+import { Server } from "socket.io";
+import type { Plugin, SocketContext } from "@dreamer/plugin";
+
+// 1. 创建 Socket.IO 插件
+export const socketIOPlugin: Plugin = {
+  name: "socket-io",
+
+  async onStart(container) {
+    const pluginManager = container.get("plugin");
+    const io = new Server(3001);
+
+    io.on("connection", async (socket) => {
+      // 构造 SocketContext
+      const ctx: SocketContext = {
+        type: "socket.io",
+        socket,
+        id: socket.id,
+        handshake: socket.handshake,
+      };
+
+      // 手动触发 onSocket 钩子
+      await pluginManager.triggerSocket(ctx);
+
+      socket.on("disconnect", async () => {
+        // 手动触发 onSocketClose 钩子
+        await pluginManager.triggerSocketClose(ctx);
+      });
+    });
+
+    // 注册到容器供其他插件使用
+    container.registerSingleton("socketIO", () => io);
+  },
+
+  async onStop(container) {
+    const io = container.get("socketIO");
+    io?.close();
+  },
+};
+
+// 2. 其他插件可以响应 Socket 事件
+export const chatPlugin: Plugin = {
+  name: "chat",
+
+  async onSocket(ctx, container) {
+    console.log(`用户连接: ${ctx.id}`);
+    ctx.socket.on("message", (data) => {
+      ctx.socket.broadcast.emit("message", data);
+    });
+  },
+
+  async onSocketClose(ctx) {
+    console.log(`用户断开: ${ctx.id}`);
+  },
+};
+```
 
 ### 热加载（开发环境）
 
@@ -697,7 +754,6 @@ const pluginManager = new PluginManager(container, {
 | `triggerBuildComplete(result)` | 触发 onBuildComplete 钩子                 |
 | `triggerSocket(ctx)`           | 触发 onSocket 钩子（WebSocket/Socket.IO） |
 | `triggerSocketClose(ctx)`      | 触发 onSocketClose 钩子                   |
-| `triggerSchedule(ctx)`         | 触发 onSchedule 钩子                      |
 | `triggerHealthCheck()`         | 触发 onHealthCheck 钩子                   |
 | `triggerHotReload(files)`      | 触发 onHotReload 钩子                     |
 
@@ -763,10 +819,6 @@ interface Plugin<
   ) => Promise<void> | void;
   onSocketClose?: (
     ctx: SocketContext,
-    container: ServiceContainer,
-  ) => Promise<void> | void;
-  onSchedule?: (
-    ctx: ScheduleContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
   onHealthCheck?: (
@@ -852,14 +904,14 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 | ------------ | ---------- |
 | 测试时间     | 2026-01-30 |
 | 测试文件数   | 12         |
-| 测试用例总数 | 159        |
+| 测试用例总数 | 157        |
 | 通过率       | 100%       |
-| 执行时间     | ~11s       |
+| 执行时间     | ~6s        |
 
 **测试覆盖**：
 
-- ✅ 所有公共 API 方法（39 个）
-- ✅ 所有应用级别事件钩子（15 个）
+- ✅ 所有公共 API 方法（38 个）
+- ✅ 所有应用级别事件钩子（14 个）
 - ✅ 边界情况（13 种）
 - ✅ 错误处理场景（10 种）
 - ✅ 便捷方法（use/bootstrap/shutdown）

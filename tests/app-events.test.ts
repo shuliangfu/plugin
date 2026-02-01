@@ -11,7 +11,6 @@ import type {
   Plugin,
   RequestContext,
   RouteDefinition,
-  ScheduleContext,
   SocketContext,
   WebSocketContext,
 } from "../src/types.ts";
@@ -49,20 +48,6 @@ function createMockWebSocketContext(): WebSocketContext {
     socket: mockSocket,
     request: new Request("http://example.com/ws"),
     connectionId: "test-connection-id",
-  };
-}
-
-/**
- * 创建模拟的定时任务上下文
- *
- * @returns 模拟的 ScheduleContext 对象
- */
-function createMockScheduleContext(): ScheduleContext {
-  return {
-    taskName: "test-task",
-    schedule: "0 * * * *",
-    lastRun: new Date(Date.now() - 3600000),
-    nextRun: new Date(Date.now() + 3600000),
   };
 }
 
@@ -565,36 +550,6 @@ describe("应用级别事件钩子 - Manager trigger* 方法", () => {
       await manager.triggerSocketClose(ctx);
 
       expect(onSocketCloseCalled).toBe(true);
-    });
-  });
-
-  // ==================== 定时任务事件测试 ====================
-
-  describe("triggerSchedule", () => {
-    it("应该触发所有已激活插件的 onSchedule 钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let onScheduleCalled = false;
-      let receivedTaskName: string | null = null;
-
-      const plugin: Plugin = {
-        name: "test-plugin",
-        version: "1.0.0",
-        async onSchedule(ctx) {
-          onScheduleCalled = true;
-          receivedTaskName = ctx.taskName;
-        },
-      };
-
-      manager.register(plugin);
-      await manager.install("test-plugin");
-      await manager.activate("test-plugin");
-
-      const ctx = createMockScheduleContext();
-      await manager.triggerSchedule(ctx);
-
-      expect(onScheduleCalled).toBe(true);
-      expect(receivedTaskName).toBe("test-task");
     });
   });
 

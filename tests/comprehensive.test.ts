@@ -1045,37 +1045,6 @@ describe("综合测试", () => {
     });
   });
 
-  describe("triggerSchedule()", () => {
-    it("应该触发定时任务钩子", async () => {
-      const container = new ServiceContainer();
-      const manager = new PluginManager(container);
-      let scheduleCalled = false;
-      let receivedContext: unknown;
-
-      const plugin: Plugin = {
-        name: "schedule-plugin",
-        version: "1.0.0",
-        async onSchedule(ctx) {
-          scheduleCalled = true;
-          receivedContext = ctx;
-        },
-      };
-
-      await manager.use(plugin);
-
-      const ctx = {
-        taskName: "daily-cleanup",
-        schedule: "0 0 * * *",
-        lastRun: new Date("2024-01-01"),
-      };
-
-      await manager.triggerSchedule(ctx);
-
-      expect(scheduleCalled).toBe(true);
-      expect(receivedContext).toEqual(ctx);
-    });
-  });
-
   describe("configUpdateHook", () => {
     it("应该在配置更新时调用 onConfigUpdate 钩子", async () => {
       const container = new ServiceContainer();

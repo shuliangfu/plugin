@@ -27,7 +27,6 @@ import type {
   RequestContext,
   ResourceLimits,
   RouteDefinition,
-  ScheduleContext,
   SocketContext,
 } from "./types.ts";
 
@@ -1260,41 +1259,6 @@ export class PluginManager {
       }
     }
     this.eventEmitter.emit("app:socket:close", ctx);
-  }
-
-  /**
-   * 触发 onSchedule 钩子
-   * 应在定时任务触发时调用
-   *
-   * @param ctx 定时任务上下文
-   *
-   * @example
-   * ```typescript
-   * cron.schedule('0 * * * *', async () => {
-   *   await pluginManager.triggerSchedule({
-   *     taskName: 'hourly-cleanup',
-   *     schedule: '0 * * * *',
-   *   });
-   * });
-   * ```
-   */
-  async triggerSchedule(ctx: ScheduleContext): Promise<void> {
-    const activePlugins = this.getActivePlugins();
-    for (const plugin of activePlugins) {
-      if (plugin.onSchedule) {
-        try {
-          await plugin.onSchedule(ctx, this.container);
-        } catch (error) {
-          const err = error instanceof Error ? error : new Error(String(error));
-          this.pluginErrors.set(plugin.name, err);
-          this.eventEmitter.emit("plugin:error", plugin.name, err);
-          if (!this.options.continueOnError) {
-            throw error;
-          }
-        }
-      }
-    }
-    this.eventEmitter.emit("app:schedule", ctx);
   }
 
   /**

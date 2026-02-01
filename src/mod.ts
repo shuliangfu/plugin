@@ -54,7 +54,6 @@ export type {
   RequestContext,
   ResourceLimits,
   RouteDefinition,
-  ScheduleContext,
   // Socket 类型（兼容 WebSocket 和 Socket.IO）
   SocketContext,
   SocketIOContext,

@@ -317,22 +317,6 @@ export interface SocketIOContext {
 export type SocketContext = WebSocketContext | SocketIOContext;
 
 /**
- * 定时任务上下文类型
- */
-export interface ScheduleContext {
-  /** 任务名称 */
-  taskName: string;
-  /** cron 表达式或间隔 */
-  schedule: string;
-  /** 上次执行时间 */
-  lastRun?: Date;
-  /** 下次执行时间 */
-  nextRun?: Date;
-  /** 扩展属性 */
-  [key: string]: unknown;
-}
-
-/**
  * 应用级别的事件钩子类型
  *
  * 插件可以实现这些钩子来响应应用的各种事件，
@@ -435,16 +419,6 @@ export interface AppEventHooks {
    */
   onSocketClose?: (
     ctx: SocketContext,
-    container: ServiceContainer,
-  ) => Promise<void> | void;
-
-  // ==================== 定时任务事件 ====================
-
-  /**
-   * 定时任务触发时调用
-   */
-  onSchedule?: (
-    ctx: ScheduleContext,
     container: ServiceContainer,
   ) => Promise<void> | void;
 
