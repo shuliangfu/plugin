@@ -144,8 +144,8 @@ export interface SocketIOSocket {
   connected: boolean;
   /** 当前加入的房间 */
   rooms: Set<string>;
-  /** 命名空间 */
-  nsp: { name: string };
+  /** 命名空间（字符串或带 name 的对象，兼容不同实现） */
+  nsp: string | { name: string };
   /** 握手信息 */
   handshake?: {
     url?: string;
