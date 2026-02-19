@@ -8,6 +8,27 @@
 
 ---
 
+## [1.0.2] - 2026-02-19
+
+### 变更
+
+- **i18n**：i18n 在插件模块加载时自动初始化。`initPluginI18n`
+  不再对外导出，调用方 无需再调用。翻译函数 `$tr`
+  在首次使用时若尚未初始化会自动初始化。语言仍从 `LANGUAGE` / `LC_ALL` / `LANG`
+  自动检测；测试若需指定语言可继续从 `./i18n.ts` 导入（如使用 `detectLocale`
+  或带 `lang` 参数调用 `$tr`）。
+
+### 修复
+
+- **测试**：与当前 i18n 错误文案对齐。`debug.test.ts` 中
+  `getDebugInfo("non-existent")` 使用 i18n 键
+  `errors.pluginNotFound`（文案含「未找到」），断言改为接受「未找到」或
+  「未注册」。`loader.test.ts` 中无效插件文件（缺少 name 或 version）使用
+  `errors.pluginMissingNameVersion`（文案含「缺少必需属性」），断言改为接受
+  「缺少必需属性」「缺少必需的属性」或「不是一个有效的插件模块」。
+
+---
+
 ## [1.0.1] - 2026-02-19
 
 ### 变更

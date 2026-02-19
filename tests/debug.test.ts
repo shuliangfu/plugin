@@ -142,7 +142,8 @@ describe("调试工具", () => {
         expect(true).toBe(false);
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain("未注册");
+        // 实现返回「未找到」，语义与「未注册」一致
+        expect((error as Error).message).toMatch(/未找到|未注册/);
       }
     });
   });

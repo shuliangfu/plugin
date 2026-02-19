@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.2] - 2026-02-19
+
+### Changed
+
+- **i18n**: i18n now auto-initializes when the plugin module is loaded.
+  `initPluginI18n` is no longer exported; callers do not need to call it. The
+  translation function `$tr` initializes i18n on first use if not yet
+  initialized. Locale is still auto-detected from `LANGUAGE` / `LC_ALL` /
+  `LANG`; tests that need a specific locale can import from `./i18n.ts` as
+  before (e.g. for `detectLocale` or for calling `$tr` with the `lang`
+  parameter).
+
+### Fixed
+
+- **Tests**: Aligned test assertions with the current i18n error messages. In
+  `debug.test.ts`, `getDebugInfo("non-existent")` throws using the i18n key
+  `errors.pluginNotFound` (message contains "未找到"); the test now accepts
+  either "未找到" or "未注册". In `loader.test.ts`, invalid plugin files
+  (missing name or version) throw using `errors.pluginMissingNameVersion`
+  (message contains "缺少必需属性"); the test now accepts "缺少必需属性",
+  "缺少必需的属性", or "不是一个有效的插件模块".
+
+---
+
 ## [1.0.1] - 2026-02-19
 
 ### Changed

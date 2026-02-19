@@ -85,4 +85,4 @@ export { loadPluginFromFile } from "./loader.ts";
 export { EventEmitter } from "./event-emitter.ts";
 export type { EventListener } from "./event-emitter.ts";
 
-// i18n 仅包内使用，不对外导出；测试需 init/setLocale 时从 ./i18n.ts 导入
+// i18n 仅包内使用，不对外导出；测试需 setLocale 时从 ./i18n.ts 导入

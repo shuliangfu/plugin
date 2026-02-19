@@ -60,9 +60,10 @@ describe("插件加载器", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         const errorMessage = (error as Error).message;
-        // 错误消息应该包含"缺少必需的属性"或"不是一个有效的插件模块"
+        // 错误消息应包含「缺少必需属性」或「缺少必需的属性」或「不是一个有效的插件模块」（含 i18n 或包装后文案）
         expect(
-          errorMessage.includes("缺少必需的属性") ||
+          errorMessage.includes("缺少必需属性") ||
+            errorMessage.includes("缺少必需的属性") ||
             errorMessage.includes("不是一个有效的插件模块"),
         ).toBe(true);
       }
@@ -85,9 +86,10 @@ describe("插件加载器", () => {
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         const errorMessage = (error as Error).message;
-        // 错误消息应该包含"缺少必需的属性"或"不是一个有效的插件模块"
+        // 错误消息应包含「缺少必需属性」或「缺少必需的属性」或「不是一个有效的插件模块」
         expect(
-          errorMessage.includes("缺少必需的属性") ||
+          errorMessage.includes("缺少必需属性") ||
+            errorMessage.includes("缺少必需的属性") ||
             errorMessage.includes("不是一个有效的插件模块"),
         ).toBe(true);
       }
