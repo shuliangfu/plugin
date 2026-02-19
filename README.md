@@ -1,20 +1,35 @@
 # @dreamer/plugin
 
-> Plugin management system for Deno and Bun: registration, lifecycle, dependency resolution, config, hot reload
+> A plugin management system compatible with Deno and Bun, providing complete
+> plugin registration, lifecycle management, dependency resolution, config
+> management, hot reload, and more.
 
-English | [中文 (Chinese)](./README-zh.md)
+> [English](./README.md) (root) | [中文 (Chinese)](./docs/zh-CN/README.md)
 
 [![JSR](https://jsr.io/badges/@dreamer/plugin)](https://jsr.io/@dreamer/plugin)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
-[![Tests](https://img.shields.io/badge/tests-157%20passed-brightgreen)](./TEST_REPORT.md)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Tests: 157 passed](https://img.shields.io/badge/Tests-157%20passed-brightgreen)](./docs/en-US/TEST_REPORT.md)
+
+**Changelog**: [English](./docs/en-US/CHANGELOG.md) |
+[中文 (Chinese)](./docs/zh-CN/CHANGELOG.md)
+
+### [1.0.1] - 2026-02-19
+
+- **Changed**: i18n translation method `$t` → `$tr`; docs reorganized to
+  `docs/en-US/` and `docs/zh-CN/`; license explicitly Apache-2.0.
 
 ---
 
-## 🎯 Features
+## 🎯 Overview
 
-Plugin management system for app plugins and extensions. Depends on `@dreamer/service` for service registration; service handles services, plugin handles lifecycle.
+A plugin management system for managing application plugins and extensions. The
+plugin system relies on `@dreamer/service` to register services provided by
+plugins, while keeping responsibilities separate: service handles service
+management, plugin handles plugin lifecycle management.
 
-**Design**: Manager handles lifecycle (install, activate, deactivate, uninstall); plugins implement event hooks (onInit, onRequest, etc.).
+**Design principle**: The Manager is responsible for plugin lifecycle management
+(install, activate, deactivate, uninstall); plugins only need to implement event
+response hooks (onInit, onRequest, etc.).
 
 ---
 
@@ -34,74 +49,106 @@ bunx jsr add @dreamer/plugin
 
 ---
 
-## 🌍 Environment Compatibility
+## 🌍 Environment compatibility
 
-| Environment | Version | Status |
-|-------------|---------|--------|
-| **Deno** | 2.5+ | ✅ Full support |
-| **Bun** | 1.0+ | ✅ Full support |
-| **Server** | - | ✅ Deno/Bun compatible |
-| **Client** | - | ❌ Not supported (server-only) |
-| **Dependencies** | `@dreamer/service@^1.0.0-beta.1` | 📦 Required |
+| Environment    | Version requirement              | Status                                                                                       |
+| -------------- | -------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Deno**       | 2.5+                             | ✅ Fully supported                                                                           |
+| **Bun**        | 1.0+                             | ✅ Fully supported                                                                           |
+| **Server**     | -                                | ✅ Supported (compatible with Deno and Bun runtimes; plugin system is a server-side pattern) |
+| **Client**     | -                                | ❌ Not supported (browser environment; plugin system is a server-side concept)               |
+| **Dependency** | `@dreamer/service@^1.0.0-beta.1` | 📦 Required for registering services provided by plugins                                     |
 
-**Note**: @dreamer/plugin is server-only; no client subpath.
+**Note**: @dreamer/plugin is a server-side-only package and does not provide a
+client sub-package.
 
 ---
 
-## ✨ Characteristics
+## ✨ Features
 
-- **Registration and loading**:
-  - Manual register
-  - Load from file (default/named export)
-  - Load from directory
-  - Metadata (name, version, dependencies)
+- **Plugin registration and loading**:
+  - Manual registration of plugin objects
+  - Load plugins from file (supports default export and named export)
+  - Load plugins in batch from a directory
+  - Plugin metadata management (name, version, dependencies, etc.)
 
-- **Lifecycle** (Manager-driven):
-  - install, activate, deactivate, uninstall
-  - State management and validation
-  - use(), bootstrap(), shutdown()
-  - register({ replace: true })
+- **Full lifecycle management** (Manager is responsible; plugins only respond to
+  events):
+  - install: update state, resolve dependencies
+  - activate: update state, check dependencies
+  - deactivate: update state
+  - uninstall: update state, clean up resources
+  - State management and transition validation
+  - Convenience methods: use(), bootstrap(), shutdown()
+  - Plugin replacement: register({ replace: true })
 
 - **Dependency management**:
-  - Declaration, topological sort
-  - Circular/missing dependency detection
+  - Plugin dependency declaration
+  - Topological sort (automatically compute load order)
+  - Circular dependency detection
+  - Missing dependency detection
+  - Dependency validation utilities
 
 - **Config management**:
-  - Runtime config overrides initial
-  - Validation, hot update
-  - onConfigUpdate hook
+  - Plugin config storage (runtime config overrides initial config)
+  - Config validation (optional validation function)
+  - Config hot update (update config at runtime)
+  - Config update hook (onConfigUpdate)
 
 - **Event system**:
-  - Lifecycle events (plugin:registered, etc.)
-  - App-level hooks (trigger* methods)
-  - Custom events, pub/sub
+  - Lifecycle events (plugin:registered, plugin:installed, plugin:activated,
+    etc.)
+  - Application-level event hooks (full list below)
+  - Manager provides trigger* methods to invoke hooks of all activated plugins
+  - Custom event support
+  - Event pub/sub pattern
+  - Multiple listener support
 
-- **App-level hooks**:
-  - Lifecycle: onInit, onStart, onStop, onShutdown
-  - HTTP: onRequest, onResponse, onError
-  - Route: onRoute
-  - Build: onBuild, onBuildComplete
-  - Socket: onSocket, onSocketClose (WebSocket/Socket.IO)
-  - Health: onHealthCheck
-  - Dev: onHotReload
+- **Application-level event hooks** (plugins only need to implement these hooks;
+  Manager is responsible for triggering):
+  - **Lifecycle**: onInit, onStart, onStop, onShutdown
+  - **HTTP request**: onRequest, onResponse, onError
+  - **Routing**: onRoute (dynamically modify routes)
+  - **Build**: onBuild, onBuildComplete
+  - **Socket**: onSocket, onSocketClose (supports both WebSocket and Socket.IO)
+  - **Health check**: onHealthCheck
+  - **Hot reload**: onHotReload (development only)
 
-- **Error isolation**, **dev tools**, **adapter pattern**
+- **Error isolation**:
+  - Plugin errors do not affect other plugins
+  - Error logging and reporting
+  - Error event emission (plugin:error)
+  - Error info query
+
+- **Development support**:
+  - Plugin hot reload (development; watch file changes)
+  - Plugin debugging utilities (getDebugInfo, getDependencyGraph)
+  - Resource limit interface (interface defined)
+
+- **Adapter pattern**:
+  - Unified plugin interface (Plugin)
+  - Switch plugins at runtime
+  - Automatic plugin service management
 
 ---
 
-## 🎯 Use Cases
+## 🎯 Use cases
 
-- App extension, modular architecture
-- Third-party plugin integration
-- Pluggable application development
-- Microservice plugin management
-- Dev hot reload
+- **Application feature extension**: Extend application features via the plugin
+  system
+- **Modular architecture**: Split the application into multiple plugin modules
+- **Third-party plugin integration**: Integrate plugins developed by third
+  parties
+- **Plugin-based application development**: Build a pluggable application
+  architecture
+- **Microservice plugin management**: Manage plugin components in microservices
+- **Development hot reload**: Automatically reload plugins during development
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick start
 
-### Basic Usage
+### Basic usage
 
 ```typescript
 import { ServiceContainer } from "@dreamer/service";
@@ -113,17 +160,17 @@ const container = new ServiceContainer();
 // Create plugin manager
 const pluginManager = new PluginManager(container);
 
-// Define plugin (implement event hooks only)
+// Define plugin (only need to implement event hooks; no lifecycle hooks required)
 const authPlugin = {
   name: "auth-plugin",
   version: "1.0.0",
-  // Init hook (called when app starts)
+  // Init hook (invoked when application starts)
   async onInit(container) {
     console.log("Auth plugin initialized");
   },
-  // Request hook
+  // Request handling hook
   async onRequest(ctx) {
-    // Check auth
+    // Check authentication
     const token = ctx.headers.get("Authorization");
     if (!token && ctx.path.startsWith("/api/")) {
       return new Response("Unauthorized", { status: 401 });
@@ -135,25 +182,25 @@ const authPlugin = {
   },
 };
 
-// 1. Use convenience method (recommended)
-await pluginManager.use(authPlugin); // Auto register → install → activate
+// Option 1: Use convenience method (recommended)
+await pluginManager.use(authPlugin); // auto register → install → activate
 
-// Trigger app init
+// Trigger application init
 await pluginManager.triggerInit();
 
 // Graceful shutdown
 await pluginManager.shutdown();
 ```
 
-### Manual Lifecycle
+### Manual lifecycle management
 
 ```typescript
-// 2. Manual lifecycle (for fine-grained control)
+// Option 2: Manual lifecycle management (for fine-grained control)
 pluginManager.register(authPlugin);
 await pluginManager.install("auth-plugin");
 pluginManager.activate("auth-plugin");
 
-// Trigger app init
+// Trigger application init
 await pluginManager.triggerInit();
 
 // Deactivate and uninstall
@@ -163,9 +210,9 @@ await pluginManager.uninstall("auth-plugin");
 
 ---
 
-## 🎨 Examples
+## 🎨 Usage examples
 
-### Plugin Dependencies
+### Plugin dependency management
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
@@ -181,38 +228,38 @@ const databasePlugin = {
   },
 };
 
-// Plugin that depends on database-plugin
+// Define plugin that depends on database-plugin
 const authPlugin = {
   name: "auth-plugin",
   version: "1.0.0",
   dependencies: ["database-plugin"], // Declare dependency
   async onInit(container) {
-    // Dependencies auto-installed/activated first; onInit called in order
+    // Dependency plugins are installed and activated first; onInit is called in dependency order
     console.log("Auth plugin initialized");
   },
 };
 
-// Register (order doesn't matter; Manager handles dependency order)
+// Register plugins (order does not matter; Manager handles dependency order)
 pluginManager.register(databasePlugin);
 pluginManager.register(authPlugin);
 
-// 1. Use bootstrap() for batch start
-await pluginManager.bootstrap(); // Auto install, activate, trigger onInit in order
+// Option 1: Use bootstrap() for batch startup
+await pluginManager.bootstrap(); // Auto install, activate, trigger onInit in dependency order
 
-// 2. Manual install (auto-installs dependencies first)
-await pluginManager.install("auth-plugin"); // database-plugin installed first
-pluginManager.activate("database-plugin"); // Activate dependency first
+// Option 2: Manual install (dependencies are installed first)
+await pluginManager.install("auth-plugin"); // database-plugin is installed first
+pluginManager.activate("database-plugin"); // Must activate dependency first
 pluginManager.activate("auth-plugin");
 ```
 
-### Plugin Config
+### Plugin config management
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
 
 const pluginManager = new PluginManager(container);
 
-// Plugin with config
+// Define plugin with config
 const cachePlugin = {
   name: "cache-plugin",
   version: "1.0.0",
@@ -221,51 +268,52 @@ const cachePlugin = {
     ttl: 3600,
     enabled: true,
   },
-  // Config validator
+  // Config validation function
   validateConfig(config) {
     return config.maxSize > 0 && config.ttl > 0;
   },
-  // Config update hook (called on hot update)
+  // Config update hook (invoked when config is hot-updated)
   async onConfigUpdate(newConfig) {
     console.log("Config updated:", newConfig);
+    // Can re-initialize services here
   },
   // Init hook
   async onInit(container) {
     const config = this.config || { maxSize: 1000, ttl: 3600 };
-    console.log("Cache plugin init, config:", config);
+    console.log("Cache plugin initialized, config:", config);
   },
 };
 
 await pluginManager.use(cachePlugin);
 
-// Get config
+// Get plugin config
 const config = pluginManager.getConfig("cache-plugin");
 console.log(config); // { maxSize: 1000, ttl: 3600, enabled: true }
 
-// Update config
+// Update plugin config
 pluginManager.setConfig("cache-plugin", {
   maxSize: 2000,
   ttl: 7200,
   enabled: true,
 });
 
-// Partial update
+// Partial config update
 pluginManager.updateConfig("cache-plugin", {
   maxSize: 3000,
 });
 ```
 
-### Load from File
+### Load plugin from file
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
 
 const pluginManager = new PluginManager(container);
 
-// Load from single file
+// Load plugin from single file
 await pluginManager.loadFromFile("./plugins/auth-plugin.ts");
 
-// Load all from directory
+// Load all plugins from directory
 await pluginManager.loadFromDirectory("./plugins");
 ```
 
@@ -282,9 +330,9 @@ const plugin: Plugin = {
   async onInit(container: ServiceContainer) {
     console.log("Auth plugin initialized");
   },
-  // Request hook
+  // Request handling hook
   async onRequest(ctx) {
-    // Check auth
+    // Check authentication
     const token = ctx.headers.get("Authorization");
     if (!token && ctx.path.startsWith("/api/")) {
       return new Response("Unauthorized", { status: 401 });
@@ -295,11 +343,11 @@ const plugin: Plugin = {
 export default plugin; // or export const plugin = { ... };
 ```
 
-### Event System
+### Event system
 
-#### Lifecycle Events
+#### Plugin lifecycle events
 
-Plugin manager emits lifecycle events; listen with `on`:
+The plugin manager emits lifecycle events; you can listen via the `on` method:
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
@@ -323,15 +371,16 @@ pluginManager.on("plugin:error", (name, error) => {
   console.error(`Plugin ${name} error:`, error);
 });
 
-// Register and install
+// Register and install plugin
 pluginManager.register(authPlugin);
 await pluginManager.install("auth-plugin");
 await pluginManager.activate("auth-plugin");
 ```
 
-#### App-level Event Hooks
+#### Application-level event hooks
 
-Plugins can implement app-level hooks for lifecycle and request handling:
+Plugins can implement application-level event hooks to respond to application
+lifecycle and request handling:
 
 ```typescript
 import type { Plugin } from "@dreamer/plugin";
@@ -342,35 +391,37 @@ const myPlugin: Plugin = {
   name: "my-plugin",
   version: "1.0.0",
 
-  // App init complete (after all plugins installed/activated)
+  // Application init complete (after all plugins are installed and activated)
   async onInit(container: ServiceContainer) {
-    console.log("App initialized");
+    console.log("Application initialized");
   },
 
-  // App start
+  // When application starts
   async onStart(container: ServiceContainer) {
-    console.log("App started");
+    console.log("Application started");
   },
 
-  // Before request (access req, res)
+  // Before request handling (can access req, res)
   async onRequest(ctx: HttpContext, container: ServiceContainer) {
-    console.log(`Request: ${ctx.method} ${ctx.path}`);
+    console.log(`Request received: ${ctx.method} ${ctx.path}`);
+    // Can access ctx.request, ctx.response, ctx.headers, etc.
   },
 
-  // After request
+  // After request handling (can access req, res)
   async onResponse(ctx: HttpContext, container: ServiceContainer) {
-    console.log(`Request done: ${ctx.method} ${ctx.path}`);
+    console.log(`Request completed: ${ctx.method} ${ctx.path}`);
+    // Can access ctx.response, etc.
   },
 
-  // Before build
+  // Before build starts
   async onBuild(
     options: { mode: "dev" | "prod"; target?: "client" | "server" },
     container: ServiceContainer,
   ) {
-    console.log(`Build start: ${options.mode}`);
+    console.log(`Build starting: ${options.mode}`);
   },
 
-  // After build
+  // After build completes
   async onBuildComplete(
     result: {
       outputFiles?: string[];
@@ -382,48 +433,48 @@ const myPlugin: Plugin = {
     console.log(`Build complete: ${result.outputFiles?.length || 0} files`);
   },
 
-  // App stop
+  // When application stops
   async onStop(container: ServiceContainer) {
-    console.log("App stopped");
+    console.log("Application stopped");
   },
 
-  // App shutdown
+  // When application shuts down
   async onShutdown(container: ServiceContainer) {
-    console.log("App shutdown");
+    console.log("Application shut down");
   },
 };
 ```
 
-**Supported hooks**:
+**Supported event hooks**:
 
-| Hook | When | Returns |
-|------|------|---------|
-| **onInit** | App init complete | void |
-| **onStart** | Server listening | void |
-| **onStop** | Graceful stop | void |
-| **onShutdown** | Final shutdown | void |
-| **onRequest** | Before HTTP request | `Response \| void` |
-| **onResponse** | After HTTP request | void |
-| **onError** | On error | `Response \| void` |
-| **onRoute** | Route registration | `RouteDefinition[]` |
-| **onBuild** | Before build | void |
-| **onBuildComplete** | After build | void |
-| **onSocket** | Socket connect (WebSocket/Socket.IO) | void |
-| **onSocketClose** | Socket close | void |
-| **onHealthCheck** | Health check | `HealthStatus` |
-| **onHotReload** | Hot reload (dev) | void |
+| Hook                | When triggered                                       | Return value                                                  |
+| ------------------- | ---------------------------------------------------- | ------------------------------------------------------------- |
+| **onInit**          | Application init complete (after all plugins active) | void                                                          |
+| **onStart**         | Application server starts listening                  | void                                                          |
+| **onStop**          | Application graceful stop                            | void                                                          |
+| **onShutdown**      | Application final shutdown                           | void                                                          |
+| **onRequest**       | Before HTTP request handling                         | `Response \| void` (return Response to skip further handling) |
+| **onResponse**      | After HTTP request handling                          | void                                                          |
+| **onError**         | When an error occurs                                 | `Response \| void` (return custom error response)             |
+| **onRoute**         | When routes are registered                           | `RouteDefinition[]` (modified route list)                     |
+| **onBuild**         | Before build starts                                  | void                                                          |
+| **onBuildComplete** | After build completes                                | void                                                          |
+| **onSocket**        | Socket connection established (WebSocket/Socket.IO)  | void                                                          |
+| **onSocketClose**   | Socket connection closed                             | void                                                          |
+| **onHealthCheck**   | When health check runs                               | `HealthStatus`                                                |
+| **onHotReload**     | Hot reload complete (development)                    | void                                                          |
 
-**Manager trigger\* methods** (trigger hooks of all activated plugins):
+**Manager trigger\* methods** (invoke hooks of all activated plugins):
 
 ```typescript
-// App framework should call these at appropriate times
+// Application framework should call these at the appropriate time
 await pluginManager.triggerInit();      // After all plugins activated
 await pluginManager.triggerStart();     // When server starts listening
-await pluginManager.triggerStop();      // Graceful stop (reverse order)
-await pluginManager.triggerShutdown();  // Final shutdown (reverse order)
+await pluginManager.triggerStop();      // On graceful stop (reverse order)
+await pluginManager.triggerShutdown(); // On final shutdown (reverse order)
 
 // HTTP request lifecycle
-const response = await pluginManager.triggerRequest(ctx);  // Return Response to skip
+const response = await pluginManager.triggerRequest(ctx);  // If Response returned, skip rest
 await pluginManager.triggerResponse(ctx);
 const errorResponse = await pluginManager.triggerError(error, ctx);
 
@@ -447,17 +498,23 @@ await pluginManager.triggerHotReload(["src/app.ts"]);
 
 **Notes**:
 
-1. Only **activated** plugins respond to app-level events
-2. Hook errors are caught and logged (`continueOnError: true` doesn't affect others)
-3. `onStop` and `onShutdown` run in reverse order
-4. `onRequest` returning `Response` skips subsequent plugins
-5. `onHealthCheck` aggregates all plugin health statuses
-6. All hooks are optional
-7. **Socket hooks must be triggered manually**: `@dreamer/dweb` has no built-in WebSocket/Socket.IO; implement and call `triggerSocket`/`triggerSocketClose` (see example below)
+1. Only **activated** plugins respond to application-level events
+2. Errors in event hooks are caught and logged (when `continueOnError: true`,
+   other plugins are not affected)
+3. `onStop` and `onShutdown` run in reverse order (last activated stops first)
+4. When `onRequest` returns a `Response`, subsequent plugins' `onRequest` are
+   not run
+5. `onHealthCheck` aggregates health status from all plugins
+6. All event hooks are optional; plugins may implement only the events they need
+7. **Socket hooks must be triggered manually**: the `@dreamer/dweb` framework no
+   longer bundles WebSocket/Socket.IO support; you must implement it and call
+   `triggerSocket`/`triggerSocketClose` yourself (see example below)
 
-#### Socket Hook Manual Trigger Example
+#### Socket hook manual trigger example
 
-`@dreamer/dweb` has no built-in WebSocket. To use `onSocket`, create Socket.IO and trigger manually:
+The `@dreamer/dweb` framework has removed built-in WebSocket support. To use the
+`onSocket` hook, you need to create your own Socket.IO server and trigger it
+manually:
 
 ```typescript
 import { Server } from "socket.io";
@@ -480,11 +537,11 @@ export const socketIOPlugin: Plugin = {
         handshake: socket.handshake,
       };
 
-      // Manually trigger onSocket
+      // Manually trigger onSocket hook
       await pluginManager.triggerSocket(ctx);
 
       socket.on("disconnect", async () => {
-        // Manually trigger onSocketClose
+        // Manually trigger onSocketClose hook
         await pluginManager.triggerSocketClose(ctx);
       });
     });
@@ -516,7 +573,7 @@ export const chatPlugin: Plugin = {
 };
 ```
 
-### Hot Reload (Dev)
+### Hot reload (development)
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
@@ -524,29 +581,29 @@ import { PluginManager } from "@dreamer/plugin";
 // Enable hot reload
 const pluginManager = new PluginManager(container, {
   enableHotReload: true,
-  hotReloadInterval: 1000, // Check every 1s
+  hotReloadInterval: 1000, // Check every 1 second
 });
 
-// Load from file (auto-watches for changes)
+// Load plugin from file (will watch for file changes)
 await pluginManager.loadFromFile("./plugins/auth-plugin.ts");
 
-// When file changes, plugin auto-reloads
-// If activated, deactivates first, then re-installs and activates
+// When file changes, plugin is reloaded automatically
+// If plugin was active, it is deactivated first, then reinstalled and activated
 ```
 
-### Debug Tools
+### Debug utilities
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
 
 const pluginManager = new PluginManager(container);
 
-// Register and install
+// Register and install plugin
 pluginManager.register(authPlugin);
 await pluginManager.install("auth-plugin");
 await pluginManager.activate("auth-plugin");
 
-// Get single plugin debug info
+// Get debug info for a single plugin
 const debugInfo = pluginManager.getDebugInfo("auth-plugin");
 console.log(debugInfo);
 // {
@@ -559,7 +616,7 @@ console.log(debugInfo);
 //   error: undefined,
 // }
 
-// Get all plugins debug info
+// Get debug info for all plugins
 const allDebugInfo = pluginManager.getDebugInfo();
 console.log(allDebugInfo); // PluginDebugInfo[]
 
@@ -572,17 +629,17 @@ console.log(dependencyGraph);
 // }
 ```
 
-### Error Isolation
+### Error isolation
 
 ```typescript
 import { PluginManager } from "@dreamer/plugin";
 
-// Configure error handling
+// Configure error handling options
 const pluginManager = new PluginManager(container, {
-  continueOnError: true, // Continue when hook errors
+  continueOnError: true, // When event hook errors, continue with other plugins
 });
 
-// Register plugin with error
+// Register plugin that throws
 const errorPlugin = {
   name: "error-plugin",
   version: "1.0.0",
@@ -596,14 +653,14 @@ const normalPlugin = {
   name: "normal-plugin",
   version: "1.0.0",
   async onInit() {
-    console.log("Normal plugin init success");
+    console.log("Normal plugin initialized");
   },
 };
 
 await pluginManager.use(errorPlugin);
 await pluginManager.use(normalPlugin);
 
-// Trigger init (error-plugin fails, normal-plugin succeeds)
+// Trigger init (error-plugin fails, but normal-plugin succeeds)
 await pluginManager.triggerInit();
 
 // Query error info
@@ -613,11 +670,12 @@ console.log(debugInfo.error); // Error: Init failed
 
 ---
 
-## 📚 API Reference
+## 📚 API reference
 
-### PluginManager Class
+### PluginManager class
 
-Plugin manager: registration, lifecycle, events.
+Plugin manager class; provides plugin registration, lifecycle management, event
+system, etc.
 
 #### Constructor
 
@@ -628,24 +686,24 @@ new PluginManager(
 )
 ```
 
-Create a new plugin manager instance.
+Creates a new plugin manager instance.
 
-**Params**:
+**Parameters**:
 
-| Param | Type | Description |
-|-------|------|--------------|
-| `container` | `ServiceContainer` | Service container |
-| `options` | `PluginManagerOptions` | Optional config |
+| Parameter   | Type                   | Description                                                  |
+| ----------- | ---------------------- | ------------------------------------------------------------ |
+| `container` | `ServiceContainer`     | Service container instance (for registering plugin services) |
+| `options`   | `PluginManagerOptions` | Optional configuration                                       |
 
 **Options**:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `autoActivate` | `boolean` | `false` | Auto-activate installed plugins |
-| `continueOnError` | `boolean` | `true` | Continue when plugin errors |
-| `enableHotReload` | `boolean` | `false` | Enable hot reload (dev) |
-| `hotReloadInterval` | `number` | `1000` | Hot reload interval (ms) |
-| `resourceLimits` | `ResourceLimits` | - | Resource limits (optional) |
+| Option              | Type             | Default | Description                                |
+| ------------------- | ---------------- | ------- | ------------------------------------------ |
+| `autoActivate`      | `boolean`        | `false` | Whether to auto-activate installed plugins |
+| `continueOnError`   | `boolean`        | `true`  | Whether to continue when a plugin errors   |
+| `enableHotReload`   | `boolean`        | `false` | Whether to enable hot reload (development) |
+| `hotReloadInterval` | `number`         | `1000`  | Hot reload watch interval (ms)             |
+| `resourceLimits`    | `ResourceLimits` | -       | Resource limits (optional)                 |
 
 **Example**:
 
@@ -656,101 +714,103 @@ const pluginManager = new PluginManager(container, {
 });
 ```
 
-#### Convenience Methods
+#### Convenience methods
 
-| Method | Description |
-|--------|-------------|
-| `use(plugin)` | Auto register → install → activate |
-| `bootstrap()` | Batch start all registered plugins |
-| `shutdown()` | Graceful shutdown (reverse order) |
+| Method        | Description                                                                  |
+| ------------- | ---------------------------------------------------------------------------- |
+| `use(plugin)` | Auto register → install → activate plugin                                    |
+| `bootstrap()` | Start all registered plugins in dependency order                             |
+| `shutdown()`  | Gracefully shut down all plugins (deactivate and uninstall in reverse order) |
 
-#### Lifecycle Methods
+#### Lifecycle methods
 
-| Method | Description |
-|--------|-------------|
-| `register(plugin, options?)` | Register (options.replace to replace) |
-| `install(name)` | Install (auto-resolve deps) |
-| `activate(name)` | Activate (check deps) |
-| `deactivate(name)` | Deactivate |
-| `uninstall(name)` | Uninstall (auto cleanup) |
+| Method                       | Description                                           |
+| ---------------------------- | ----------------------------------------------------- |
+| `register(plugin, options?)` | Register plugin (options.replace to replace existing) |
+| `install(name)`              | Install plugin (resolves dependencies)                |
+| `activate(name)`             | Activate plugin (checks dependencies are active)      |
+| `deactivate(name)`           | Deactivate plugin                                     |
+| `uninstall(name)`            | Uninstall plugin (auto cleans up services)            |
 
-#### Query Methods
+#### Query methods
 
-| Method | Description |
-|--------|-------------|
-| `getPlugin(name)` | Get plugin object |
-| `getState(name)` | Get plugin state |
-| `getRegisteredPlugins()` | Get all registered names |
-| `getConfig(name)` | Get config |
-| `getDebugInfo(name?)` | Get debug info |
-| `getDependencyGraph()` | Get dependency graph |
+| Method                   | Description                     |
+| ------------------------ | ------------------------------- |
+| `getPlugin(name)`        | Get plugin object               |
+| `getState(name)`         | Get plugin state                |
+| `getRegisteredPlugins()` | Get all registered plugin names |
+| `getConfig(name)`        | Get plugin config               |
+| `getDebugInfo(name?)`    | Get plugin debug info           |
+| `getDependencyGraph()`   | Get dependency graph            |
 
-#### Config Methods
+#### Config methods
 
-| Method | Description |
-|--------|-------------|
-| `setConfig(name, config)` | Set config |
-| `updateConfig(name, partial)` | Partial update |
+| Method                        | Description                    |
+| ----------------------------- | ------------------------------ |
+| `setConfig(name, config)`     | Set plugin config              |
+| `updateConfig(name, partial)` | Partially update plugin config |
 
-#### Load Methods
+#### Load methods
 
-| Method | Description |
-|--------|-------------|
-| `loadFromFile(path)` | Load from file |
-| `loadFromDirectory(dir)` | Load from directory |
+| Method                   | Description                     |
+| ------------------------ | ------------------------------- |
+| `loadFromFile(path)`     | Load plugin from file           |
+| `loadFromDirectory(dir)` | Load all plugins from directory |
 
-#### Event Methods
+#### Event methods
 
-| Method | Description |
-|--------|-------------|
-| `on(event, listener)` | Add listener |
-| `off(event, listener)` | Remove listener |
-| `emit(event, ...args)` | Emit event |
+| Method                 | Description             |
+| ---------------------- | ----------------------- |
+| `on(event, listener)`  | Register event listener |
+| `off(event, listener)` | Remove event listener   |
+| `emit(event, ...args)` | Emit event              |
 
-#### Trigger Methods
+#### Trigger methods (invoke hooks of activated plugins)
 
-| Method | Description |
-|--------|-------------|
-| `triggerInit()` | Trigger onInit |
-| `triggerStart()` | Trigger onStart |
-| `triggerStop()` | Trigger onStop (reverse) |
-| `triggerShutdown()` | Trigger onShutdown (reverse) |
-| `triggerRequest(ctx)` | Trigger onRequest |
-| `triggerResponse(ctx)` | Trigger onResponse |
-| `triggerError(error, ctx?)` | Trigger onError |
-| `triggerRoute(routes)` | Trigger onRoute |
-| `triggerBuild(options)` | Trigger onBuild |
-| `triggerBuildComplete(result)` | Trigger onBuildComplete |
-| `triggerSocket(ctx)` | Trigger onSocket |
-| `triggerSocketClose(ctx)` | Trigger onSocketClose |
-| `triggerHealthCheck()` | Trigger onHealthCheck |
-| `triggerHotReload(files)` | Trigger onHotReload |
+| Method                         | Description                                 |
+| ------------------------------ | ------------------------------------------- |
+| `triggerInit()`                | Trigger onInit hook                         |
+| `triggerStart()`               | Trigger onStart hook                        |
+| `triggerStop()`                | Trigger onStop hook (reverse order)         |
+| `triggerShutdown()`            | Trigger onShutdown hook (reverse order)     |
+| `triggerRequest(ctx)`          | Trigger onRequest hook                      |
+| `triggerResponse(ctx)`         | Trigger onResponse hook                     |
+| `triggerError(error, ctx?)`    | Trigger onError hook                        |
+| `triggerRoute(routes)`         | Trigger onRoute hook                        |
+| `triggerBuild(options)`        | Trigger onBuild hook                        |
+| `triggerBuildComplete(result)` | Trigger onBuildComplete hook                |
+| `triggerSocket(ctx)`           | Trigger onSocket hook (WebSocket/Socket.IO) |
+| `triggerSocketClose(ctx)`      | Trigger onSocketClose hook                  |
+| `triggerHealthCheck()`         | Trigger onHealthCheck hook                  |
+| `triggerHotReload(files)`      | Trigger onHotReload hook                    |
 
-#### Other Methods
+#### Other methods
 
-| Method | Description |
-|--------|-------------|
-| `validateDependencies(name?)` | Validate deps (circular/missing) |
-| `stopHotReload()` | Stop hot reload |
-| `dispose()` | Clean all resources |
+| Method                        | Description                           |
+| ----------------------------- | ------------------------------------- |
+| `validateDependencies(name?)` | Validate dependencies (cycle/missing) |
+| `stopHotReload()`             | Stop hot reload                       |
+| `dispose()`                   | Clean up all resources                |
 
-### Plugin Interface
+### Plugin interface
+
+Plugin interface; defines the basic shape and event hooks of a plugin.
 
 ```typescript
 interface Plugin<
   TConfig extends Record<string, unknown> = Record<string, unknown>,
 > {
   // Required
-  name: string;
-  version: string;
+  name: string; // Plugin name (unique id)
+  version: string; // Plugin version
 
   // Optional
-  dependencies?: string[];
-  config?: TConfig;
-  validateConfig?: ConfigValidator<TConfig>;
-  onConfigUpdate?: (newConfig: TConfig) => Promise<void> | void;
+  dependencies?: string[]; // Plugin dependency list
+  config?: TConfig; // Initial plugin config
+  validateConfig?: ConfigValidator<TConfig>; // Config validation function
+  onConfigUpdate?: (newConfig: TConfig) => Promise<void> | void; // Config update hook
 
-  // App-level hooks (optional, triggered by Manager.trigger*)
+  // Application-level event hooks (optional; triggered by Manager.trigger*)
   onInit?: (container: ServiceContainer) => Promise<void> | void;
   onStart?: (container: ServiceContainer) => Promise<void> | void;
   onStop?: (container: ServiceContainer) => Promise<void> | void;
@@ -798,37 +858,39 @@ interface Plugin<
 }
 ```
 
-### PluginState Type
+### PluginState type
+
+Plugin state type.
 
 ```typescript
 type PluginState =
-  | "registered"
-  | "installed"
-  | "active"
-  | "inactive"
-  | "uninstalled";
+  | "registered" // Registered
+  | "installed" // Installed
+  | "active" // Active
+  | "inactive" // Inactive
+  | "uninstalled"; // Uninstalled
 ```
 
-### Utility Functions
+### Utility functions
 
-| Function | Description |
-|----------|-------------|
-| `detectCircularDependency(plugins)` | Detect circular deps |
-| `detectMissingDependencies(plugins)` | Detect missing deps |
-| `topologicalSort(plugins, names)` | Topological sort |
-| `loadPluginFromFile(path)` | Load from file |
+| Function                             | Description                   |
+| ------------------------------------ | ----------------------------- |
+| `detectCircularDependency(plugins)`  | Detect circular dependencies  |
+| `detectMissingDependencies(plugins)` | Detect missing dependencies   |
+| `topologicalSort(plugins, names)`    | Topological sort (load order) |
+| `loadPluginFromFile(path)`           | Load plugin from file         |
 
 ---
 
-## 🔧 Advanced Config
+## 🔧 Advanced configuration
 
-### Resource Limits
+### Resource limits
 
 ```typescript
 interface ResourceLimits {
-  maxMemory?: number; // MB (optional)
-  maxCpu?: number; // CPU % (optional)
-  timeout?: number; // ms (optional)
+  maxMemory?: number; // Memory limit (MB, optional)
+  maxCpu?: number; // CPU limit (%, optional)
+  timeout?: number; // Timeout (ms, optional)
 }
 
 const pluginManager = new PluginManager(container, {
@@ -839,10 +901,10 @@ const pluginManager = new PluginManager(container, {
 });
 ```
 
-### Plugin Replacement
+### Plugin replacement
 
 ```typescript
-// Replace existing plugin with same name
+// Use replace option to replace existing plugin with same name
 pluginManager.register(newPlugin, { replace: true });
 
 // Listen for replace event
@@ -855,66 +917,86 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 ## 🚀 Performance
 
-- **Dependency resolution**: Topological sort for load order
-- **Error isolation**: Plugin errors don't affect others
-- **Hot reload**: File watch for dev
-- **Service management**: Auto cleanup on uninstall
-- **Config cache**: Runtime config caching
+- **Dependency resolution**: Topological sort for optimal load order
+- **Error isolation**: Plugin errors do not affect other plugins; improves
+  stability
+- **Hot reload**: Development supports file watching and auto plugin reload
+- **Service management**: Auto management of plugin-registered services; cleanup
+  on uninstall
+- **Config cache**: Runtime config cached to reduce repeated computation
 
 ---
 
-## 📊 Test Report
+## 📊 Test report
 
-| Metric | Value |
-|--------|-------|
-| Test date | 2026-01-30 |
-| Test files | 12 |
-| Total tests | 157 |
-| Pass rate | 100% |
-| Duration | ~6s |
+| Metric      | Value      |
+| ----------- | ---------- |
+| Test date   | 2026-01-30 |
+| Test files  | 12         |
+| Total cases | 157        |
+| Pass rate   | 100%       |
+| Duration    | ~6s        |
 
 **Coverage**:
 
 - ✅ All public API methods (38)
-- ✅ All app-level hooks (14)
+- ✅ All application-level event hooks (14)
 - ✅ Edge cases (13)
 - ✅ Error handling (10)
-- ✅ use/bootstrap/shutdown
+- ✅ Convenience methods (use/bootstrap/shutdown)
 - ✅ Plugin replacement
 
-See [TEST_REPORT.md](./TEST_REPORT.md) for details.
+Full test report: [TEST_REPORT.md](./docs/en-US/TEST_REPORT.md).
 
 ---
 
 ## 📝 Notes
 
-1. **Service container**: Requires `@dreamer/service` ServiceContainer.
+1. **Service container dependency**: The plugin system depends on
+   `@dreamer/service` to register services provided by plugins; a
+   ServiceContainer instance must be provided.
 
-2. **State management**: State transitions must follow order (registered → installed → active → inactive → uninstalled); auto rollback on failure.
+2. **Plugin state management**: Plugin state transitions must follow the order
+   (registered → installed → active → inactive → uninstalled); failed
+   transitions are rolled back automatically.
 
-3. **Dependencies**: Auto-resolved on install; activation checks deps; circular/missing detected.
+3. **Dependency management**:
+   - Plugin dependencies are resolved and installed automatically on install
+   - Activating a plugin checks that its dependencies are already active
+   - Circular and missing dependencies are detected and an error is thrown
 
-4. **Config**: Runtime overrides initial; validation and update hooks on change.
+4. **Config management**:
+   - Runtime config overrides initial plugin config
+   - Config updates trigger validation and update hooks
+   - Validation failure throws an error
 
-5. **Errors**: `continueOnError: true` (default) catches and logs; query via `getDebugInfo`; `plugin:error` emitted.
+5. **Error handling**:
+   - By default (`continueOnError: true`), plugin errors are caught and logged
+     and do not affect other plugins
+   - Error info can be queried via `getDebugInfo`
+   - Errors emit the `plugin:error` event
 
-6. **Hot reload**: Dev only; file changes auto-reload; deactivate before reinstall.
+6. **Hot reload**:
+   - For development only; not recommended in production
+   - Plugins are reloaded automatically when files change
+   - Active plugins are deactivated first, then reinstalled and activated
 
-7. **Service cleanup**: Auto-removed on uninstall.
+7. **Service cleanup**: Uninstalling a plugin automatically removes all services
+   it registered; no manual cleanup needed.
 
-8. **Type safety**: Full TypeScript support including generic config.
+8. **Type safety**: Full TypeScript types, including generic config types.
 
 ---
 
 ## 🤝 Contributing
 
-Issues and Pull Requests are welcome!
+Issues and Pull Requests are welcome.
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE.md](./LICENSE.md)
+Apache License 2.0 - see [LICENSE](./LICENSE)
 
 ---
 

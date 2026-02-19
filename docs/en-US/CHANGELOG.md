@@ -1,5 +1,7 @@
 # Changelog
 
+[English](./CHANGELOG.md) | [中文 (Chinese)](../zh-CN/CHANGELOG.md)
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -7,11 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.1] - 2026-02-19
+
+### Changed
+
+- **i18n**: Renamed translation method from `$t` to `$tr` to avoid conflict with
+  global `$t`. Update existing code to use `$tr` for package messages.
+- **Docs**: Reorganized documentation into `docs/en-US/` (CHANGELOG,
+  TEST_REPORT) and `docs/zh-CN/` (README, CHANGELOG, TEST_REPORT with full
+  Chinese translations). Removed root CHANGELOG and TEST_REPORT. Root README
+  shortened with links to docs.
+- **License**: Explicitly Apache-2.0 in `deno.json` and documentation.
+
+---
+
 ## [1.0.0] - 2026-02-06
 
 ### Added
 
-First stable release. Plugin management system for Deno and Bun, compatible with the dweb framework.
+First stable release. Plugin management system for Deno and Bun, compatible with
+the dweb framework.
 
 #### Registration and Loading
 
@@ -24,7 +41,8 @@ First stable release. Plugin management system for Deno and Bun, compatible with
 
 - **States**: registered → installed → active → inactive → uninstalled
 - **Methods**: register(), install(), activate(), deactivate(), uninstall()
-- **Convenience**: use() (auto register → install → activate), bootstrap(), shutdown()
+- **Convenience**: use() (auto register → install → activate), bootstrap(),
+  shutdown()
 - **Replacement**: register({ replace: true }) to replace existing plugin
 - State transition validation and rollback
 
@@ -45,7 +63,8 @@ First stable release. Plugin management system for Deno and Bun, compatible with
 
 #### Event System
 
-- **Lifecycle events**: plugin:registered, plugin:installed, plugin:activated, plugin:deactivated, plugin:uninstalled, plugin:replaced, plugin:error
+- **Lifecycle events**: plugin:registered, plugin:installed, plugin:activated,
+  plugin:deactivated, plugin:uninstalled, plugin:replaced, plugin:error
 - **App-level hooks** (triggered by Manager.trigger*):
   - Lifecycle: onInit, onStart, onStop, onShutdown
   - HTTP: onRequest, onResponse, onError

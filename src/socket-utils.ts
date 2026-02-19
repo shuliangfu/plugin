@@ -82,7 +82,9 @@ export function createWebSocketContext(
  */
 export function createSocketIOContext(socket: SocketIOSocket): SocketIOContext {
   const nsp = socket.nsp;
-  const namespace = typeof nsp === "string" ? nsp : (nsp as { name: string }).name;
+  const namespace = typeof nsp === "string"
+    ? nsp
+    : (nsp as { name: string }).name;
   return {
     type: "socketio",
     connectionId: socket.id,

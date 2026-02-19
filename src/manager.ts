@@ -7,6 +7,7 @@
 import { join, readdir, stat } from "@dreamer/runtime-adapter";
 import type { ServiceContainer } from "@dreamer/service";
 
+import { $tr } from "./i18n.ts";
 import {
   detectCircularDependency,
   detectMissingDependencies,
@@ -117,7 +118,9 @@ export class PluginManager {
 
     if (this.plugins.has(plugin.name)) {
       if (!replace) {
-        throw new Error(`插件 "${plugin.name}" 已注册`);
+        throw new Error(
+          $tr("errors.pluginAlreadyRegistered", { name: plugin.name }),
+        );
       }
       // 替换模式：先清理旧插件的状态
       this.pluginStates.delete(plugin.name);
@@ -286,13 +289,16 @@ export class PluginManager {
   async install(name: string): Promise<void> {
     const plugin = this.plugins.get(name);
     if (!plugin) {
-      throw new Error(`插件 "${name}" 未注册`);
+      throw new Error($tr("errors.pluginNotRegistered", { name }));
     }
 
     const currentState = this.pluginStates.get(name);
     if (currentState !== "registered") {
       throw new Error(
-        `插件 "${name}" 当前状态为 "${currentState}"，无法安装（只能从 registered 状态安装）`,
+        $tr("errors.pluginWrongStateInstall", {
+          name,
+          state: currentState ?? "undefined",
+        }),
       );
     }
 
@@ -355,13 +361,16 @@ export class PluginManager {
   activate(name: string): void {
     const plugin = this.plugins.get(name);
     if (!plugin) {
-      throw new Error(`插件 "${name}" 未注册`);
+      throw new Error($tr("errors.pluginNotRegistered", { name }));
     }
 
     const currentState = this.pluginStates.get(name);
     if (currentState !== "installed" && currentState !== "inactive") {
       throw new Error(
-        `插件 "${name}" 当前状态为 "${currentState}"，无法激活（只能从 installed 或 inactive 状态激活）`,
+        $tr("errors.pluginWrongStateActivate", {
+          name,
+          state: currentState ?? "undefined",
+        }),
       );
     }
 
@@ -369,11 +378,14 @@ export class PluginManager {
     if (plugin.dependencies) {
       for (const depName of plugin.dependencies) {
         const depState = this.pluginStates.get(depName);
-        // 只有当状态明确不是 "active" 时才抛出错误
         if (!depState || depState !== "active") {
           const stateStr = depState || "undefined";
           throw new Error(
-            `插件 "${name}" 的依赖 "${depName}" 未激活（当前状态: ${stateStr}）`,
+            $tr("errors.pluginDependencyNotActive", {
+              name,
+              dep: depName,
+              state: stateStr,
+            }),
           );
         }
       }
@@ -397,13 +409,16 @@ export class PluginManager {
   deactivate(name: string): void {
     const plugin = this.plugins.get(name);
     if (!plugin) {
-      throw new Error(`插件 "${name}" 未注册`);
+      throw new Error($tr("errors.pluginNotRegistered", { name }));
     }
 
     const currentState = this.pluginStates.get(name);
     if (currentState !== "active") {
       throw new Error(
-        `插件 "${name}" 当前状态为 "${currentState}"，无法停用（只能从 active 状态停用）`,
+        $tr("errors.pluginWrongStateDeactivate", {
+          name,
+          state: currentState ?? "undefined",
+        }),
       );
     }
 
@@ -425,7 +440,7 @@ export class PluginManager {
   async uninstall(name: string): Promise<void> {
     const plugin = this.plugins.get(name);
     if (!plugin) {
-      throw new Error(`插件 "${name}" 未注册`);
+      throw new Error($tr("errors.pluginNotRegistered", { name }));
     }
 
     const currentState = this.pluginStates.get(name);
@@ -505,7 +520,7 @@ export class PluginManager {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       this.eventEmitter.emit("plugin:error", path, err);
-      console.error(`热加载插件失败: ${path}`, error);
+      console.error($tr("log.hotReloadFailed", { path }), error);
     }
   }
 
@@ -537,8 +552,10 @@ export class PluginManager {
         try {
           await this.loadFromFile(filePath);
         } catch (error) {
-          // 如果某个文件加载失败，记录错误但继续加载其他文件
-          console.error(`加载插件文件失败: ${filePath}`, error);
+          console.error(
+            $tr("log.loadPluginFileFailed", { path: filePath }),
+            error,
+          );
           if (!this.options.continueOnError) {
             throw error;
           }
@@ -546,9 +563,10 @@ export class PluginManager {
       }
     } catch (error) {
       throw new Error(
-        `加载插件目录失败: ${directory} - ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        $tr("errors.loadDirectoryFailed", {
+          directory,
+          message: error instanceof Error ? error.message : String(error),
+        }),
       );
     }
   }
@@ -619,10 +637,9 @@ export class PluginManager {
    */
   validateDependencies(name?: string): void {
     if (name) {
-      // 验证单个插件的依赖
       const plugin = this.plugins.get(name);
       if (!plugin) {
-        throw new Error(`插件 "${name}" 未注册`);
+        throw new Error($tr("errors.pluginNotRegistered", { name }));
       }
 
       // 收集相关插件
@@ -650,28 +667,34 @@ export class PluginManager {
         }
       }
 
-      // 检测循环依赖
       const cycle = detectCircularDependency(relatedPlugins);
       if (cycle) {
         throw new Error(
-          `插件 "${name}" 存在循环依赖: ${cycle.join(" -> ")} -> ${cycle[0]}`,
+          $tr("errors.circularDependencySingle", {
+            name,
+            cycle: cycle.join(" -> "),
+            first: cycle[0],
+          }),
         );
       }
 
-      // 检测缺失依赖
       const missing = detectMissingDependencies(relatedPlugins);
       if (Object.keys(missing).length > 0) {
         const missingList = Object.entries(missing)
           .map(([pName, deps]) => `${pName}: [${deps.join(", ")}]`)
           .join("; ");
-        throw new Error(`插件 "${name}" 存在缺失依赖: ${missingList}`);
+        throw new Error(
+          $tr("errors.missingDependencySingle", { name, list: missingList }),
+        );
       }
     } else {
-      // 验证所有插件的依赖
       const cycle = detectCircularDependency(this.plugins);
       if (cycle) {
         throw new Error(
-          `检测到循环依赖: ${cycle.join(" -> ")} -> ${cycle[0]}`,
+          $tr("errors.circularDependencyAll", {
+            cycle: cycle.join(" -> "),
+            first: cycle[0],
+          }),
         );
       }
 
@@ -680,7 +703,9 @@ export class PluginManager {
         const missingList = Object.entries(missing)
           .map(([pName, deps]) => `${pName}: [${deps.join(", ")}]`)
           .join("; ");
-        throw new Error(`检测到缺失依赖: ${missingList}`);
+        throw new Error(
+          $tr("errors.missingDependencyAll", { list: missingList }),
+        );
       }
     }
   }
@@ -710,13 +735,12 @@ export class PluginManager {
   setConfig(name: string, config: Record<string, unknown>): void {
     const plugin = this.plugins.get(name);
     if (!plugin) {
-      throw new Error(`插件 "${name}" 未注册`);
+      throw new Error($tr("errors.pluginNotRegistered", { name }));
     }
 
-    // 如果插件有配置验证函数，进行验证
     if (plugin.validateConfig) {
       if (!plugin.validateConfig(config)) {
-        throw new Error(`插件 "${name}" 配置验证失败`);
+        throw new Error($tr("errors.pluginConfigValidationFailed", { name }));
       }
     }
 
@@ -762,7 +786,7 @@ export class PluginManager {
     if (name) {
       const plugin = this.plugins.get(name);
       if (!plugin) {
-        throw new Error(`插件 "${name}" 未注册`);
+        throw new Error($tr("errors.pluginNotFound", { name }));
       }
 
       return {
