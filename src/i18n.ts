@@ -46,7 +46,8 @@ export function detectLocale(): Locale {
   return DEFAULT_LOCALE;
 }
 
-export function initPluginI18n(): void {
+/** 内部初始化，导入 i18n 时自动执行，不导出 */
+function initPluginI18n(): void {
   if (pluginI18n) return;
   const i18n = createI18n({
     defaultLocale: DEFAULT_LOCALE,
@@ -58,11 +59,14 @@ export function initPluginI18n(): void {
   pluginI18n = i18n;
 }
 
+initPluginI18n();
+
 export function $tr(
   key: string,
   params?: Record<string, string | number>,
   lang?: Locale,
 ): string {
+  if (!pluginI18n) initPluginI18n();
   if (!pluginI18n) return key;
   if (lang !== undefined) {
     const prev = pluginI18n.getLocale();

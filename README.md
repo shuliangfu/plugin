@@ -13,10 +13,13 @@
 **Changelog**: [English](./docs/en-US/CHANGELOG.md) |
 [中文 (Chinese)](./docs/zh-CN/CHANGELOG.md)
 
-### [1.0.1] - 2026-02-19
+### [1.0.2] - 2026-02-19
 
-- **Changed**: i18n translation method `$t` → `$tr`; docs reorganized to
-  `docs/en-US/` and `docs/zh-CN/`; license explicitly Apache-2.0.
+- **Changed**: i18n auto-initializes on module load; `initPluginI18n` no longer
+  exported. **Fixed**: Test assertions aligned with i18n error messages
+  (getDebugInfo / pluginNotFound, loadPluginFromFile /
+  pluginMissingNameVersion). Full history:
+  [Changelog](./docs/en-US/CHANGELOG.md)
 
 ---
 
