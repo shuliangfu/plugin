@@ -1,79 +1,81 @@
-# @dreamer/plugin Test Report
+# @dreamer/plugin 测试报告
 
-## 📋 Test Overview
+[English](../en-US/TEST_REPORT.md) | 中文 (Chinese)
 
-| Item | Value |
-|------|-------|
-| Test library version | 1.0.0-beta.4 |
-| Runtime adapter | @dreamer/runtime-adapter@^1.0.0-beta.22 |
-| Test framework | @dreamer/test@^1.0.0-beta.39 |
-| Test date | 2026-01-30 |
-| Test environment | Deno 2.x / Bun 1.x |
+## 📋 测试概览
 
----
-
-## 📊 Test Results
-
-### Overall Statistics
-
-| Metric | Value |
-|--------|-------|
-| Test files | 12 |
-| Total tests | 157 |
-| Passed | 157 |
-| Failed | 0 |
-| Pass rate | 100% |
-| Execution time | ~6s |
-
-### Test File Statistics
-
-| File | Count | Status |
-|------|-------|--------|
-| `comprehensive.test.ts` | 48 | ✅ All passed |
-| `app-events.test.ts` | 20 | ✅ All passed |
-| `mod.test.ts` | 34 | ✅ All passed |
-| `config.test.ts` | 10 | ✅ All passed |
-| `event-emitter.test.ts` | 10 | ✅ All passed |
-| `debug.test.ts` | 8 | ✅ All passed |
-| `error-isolation.test.ts` | 6 | ✅ All passed |
-| `load-directory.test.ts` | 5 | ✅ All passed |
-| `loader.test.ts` | 5 | ✅ All passed |
-| `dispose.test.ts` | 5 | ✅ All passed |
-| `hot-reload.test.ts` | 4 | ✅ All passed |
-| `resource-limits.test.ts` | 2 | ✅ All passed |
+| 项           | 值                                      |
+| ------------ | --------------------------------------- |
+| 测试库版本   | 1.0.0-beta.4                            |
+| 运行时适配器 | @dreamer/runtime-adapter@^1.0.0-beta.22 |
+| 测试框架     | @dreamer/test@^1.0.0-beta.39            |
+| 测试日期     | 2026-01-30                              |
+| 测试环境     | Deno 2.x / Bun 1.x                      |
 
 ---
 
-## 🔍 Feature Test Details
+## 📊 测试结果
 
-### 1. Comprehensive Tests (comprehensive.test.ts) - 48 tests
+### 总体统计
 
-#### 1.1 use() convenience method
+| 指标       | 值   |
+| ---------- | ---- |
+| 测试文件数 | 12   |
+| 测试总数   | 157  |
+| 通过       | 157  |
+| 失败       | 0    |
+| 通过率     | 100% |
+| 执行时间   | ~6s  |
+
+### 测试文件统计
+
+| 文件                      | 数量 | 状态        |
+| ------------------------- | ---- | ----------- |
+| `comprehensive.test.ts`   | 48   | ✅ 全部通过 |
+| `app-events.test.ts`      | 20   | ✅ 全部通过 |
+| `mod.test.ts`             | 34   | ✅ 全部通过 |
+| `config.test.ts`          | 10   | ✅ 全部通过 |
+| `event-emitter.test.ts`   | 10   | ✅ 全部通过 |
+| `debug.test.ts`           | 8    | ✅ 全部通过 |
+| `error-isolation.test.ts` | 6    | ✅ 全部通过 |
+| `load-directory.test.ts`  | 5    | ✅ 全部通过 |
+| `loader.test.ts`          | 5    | ✅ 全部通过 |
+| `dispose.test.ts`         | 5    | ✅ 全部通过 |
+| `hot-reload.test.ts`      | 4    | ✅ 全部通过 |
+| `resource-limits.test.ts` | 2    | ✅ 全部通过 |
+
+---
+
+## 🔍 功能测试详情
+
+### 1. 综合测试（comprehensive.test.ts）- 48 用例
+
+#### 1.1 use() 便捷方法
 
 - ✅ Skip already registered plugins
 - ✅ Skip already installed plugins
 - ✅ Skip already activated plugins
 - ✅ Re-activate inactive plugins
 
-#### 1.2 bootstrap() edge cases
+#### 1.2 bootstrap() 边界情况
 
 - ✅ Handle empty plugin list
 - ✅ Skip already installed/activated plugins
 
-#### 1.3 shutdown() edge cases
+#### 1.3 shutdown() 边界情况
 
 - ✅ Handle empty plugin list
 - ✅ Handle partially uninstalled plugins
 - ✅ Deactivate plugins in reverse order
 
-#### 1.4 validateDependencies() single plugin
+#### 1.4 validateDependencies() 单插件
 
 - ✅ Validate single plugin dependencies
 - ✅ Reject validation for unregistered plugins
 - ✅ Detect circular dependency in single plugin
 - ✅ Detect missing dependencies in single plugin
 
-#### 1.5 loadFromFile() via Manager
+#### 1.5 通过 Manager 的 loadFromFile()
 
 - ✅ Load and register plugin from file
 - ✅ Handle load failure
@@ -134,7 +136,7 @@
 - ✅ continueOnError: true continues to next plugin
 - ✅ continueOnError: false stops at first error
 
-### 2. App-level Event Hooks (app-events.test.ts) - 20 tests
+### 2. 应用级事件钩子（app-events.test.ts）- 20 用例
 
 #### 2.1 triggerInit hook
 
@@ -206,7 +208,7 @@
 - ✅ Should only trigger hooks of activated plugins
 - ✅ Should isolate errors between plugins
 
-### 3. Core Features (mod.test.ts) - 34 tests
+### 3. 核心功能（mod.test.ts）- 34 用例
 
 #### 3.1 Basic
 
@@ -272,7 +274,7 @@
 - ✅ topologicalSort should reject circular deps
 - ✅ topologicalSort should reject missing deps
 
-### 4. Config Management (config.test.ts) - 10 tests
+### 4. 配置管理（config.test.ts）- 10 用例
 
 #### 4.1 getConfig
 
@@ -292,7 +294,7 @@
 
 - ✅ Should merge with existing config
 
-### 5. Debug Tools (debug.test.ts) - 8 tests
+### 5. 调试工具（debug.test.ts）- 8 用例
 
 #### 5.1 getDebugInfo
 
@@ -308,7 +310,7 @@
 - ✅ Should return dependency graph
 - ✅ Should return empty deps when plugin has none
 
-### 6. Error Isolation (error-isolation.test.ts) - 6 tests
+### 6. 错误隔离（error-isolation.test.ts）- 6 用例
 
 #### 6.1 Hook error isolation
 
@@ -325,7 +327,7 @@
 - ✅ continueOnError: true should continue
 - ✅ continueOnError: false should throw
 
-### 7. Directory Loading (load-directory.test.ts) - 5 tests
+### 7. 目录加载（load-directory.test.ts）- 5 用例
 
 - ✅ Should load all plugin files from directory
 - ✅ Should only load .ts and .js files
@@ -333,7 +335,7 @@
 - ✅ Should throw when continueOnError: false
 - ✅ Should handle non-existent directory
 
-### 8. Plugin Loader (loader.test.ts) - 5 tests
+### 8. 插件加载器（loader.test.ts）- 5 用例
 
 - ✅ Should load plugin from file (default export)
 - ✅ Should load plugin from file (named export 'plugin')
@@ -341,112 +343,112 @@
 - ✅ Should reject invalid plugin file (missing version)
 - ✅ Should handle file load errors
 
-### 9. Resource Cleanup (dispose.test.ts) - 5 tests
+### 9. 资源清理（dispose.test.ts）- 5 用例
 
 - ✅ Should clean up all resources
 - ✅ Should stop hot reload
 - ✅ Should remove all event listeners
 - ✅ Should work when hot reload not enabled
 
-### 10. Hot Reload (hot-reload.test.ts) - 4 tests
+### 10. 热加载（hot-reload.test.ts）- 4 用例
 
 - ✅ Should create hot reload manager instance
 - ✅ Should watch file changes and reload plugins
 - ✅ Should stop hot reload
 - ✅ Should emit reload events
 
-### 11. Resource Limits (resource-limits.test.ts) - 2 tests
+### 11. 资源限制（resource-limits.test.ts）- 2 用例
 
 - ✅ Should accept resource limit config
 - ✅ Should work without resource limit config
 
-### 12. Event Emitter (event-emitter.test.ts) - 10 tests
+### 12. 事件发射器（event-emitter.test.ts）- 10 用例
 
 - ✅ Basic event emit functionality
 
 ---
 
-## 📈 Test Coverage Analysis
+## 📈 测试覆盖分析
 
-### API Method Coverage
+### API 方法覆盖
 
-| Module | Method | Status |
-|--------|--------|--------|
-| PluginManager | register() | ✅ |
-| PluginManager | use() | ✅ |
-| PluginManager | bootstrap() | ✅ |
-| PluginManager | shutdown() | ✅ |
-| PluginManager | install() | ✅ |
-| PluginManager | activate() | ✅ |
-| PluginManager | deactivate() | ✅ |
-| PluginManager | uninstall() | ✅ |
-| PluginManager | getPlugin() | ✅ |
-| PluginManager | getState() | ✅ |
-| PluginManager | getRegisteredPlugins() | ✅ |
-| PluginManager | loadFromFile() | ✅ |
-| PluginManager | loadFromDirectory() | ✅ |
-| PluginManager | validateDependencies() | ✅ |
-| PluginManager | getConfig() | ✅ |
-| PluginManager | setConfig() | ✅ |
-| PluginManager | updateConfig() | ✅ |
-| PluginManager | getDebugInfo() | ✅ |
-| PluginManager | getDependencyGraph() | ✅ |
-| PluginManager | on() | ✅ |
-| PluginManager | off() | ✅ |
-| PluginManager | emit() | ✅ |
-| PluginManager | stopHotReload() | ✅ |
-| PluginManager | dispose() | ✅ |
-| PluginManager | triggerInit() | ✅ |
-| PluginManager | triggerStart() | ✅ |
-| PluginManager | triggerStop() | ✅ |
-| PluginManager | triggerShutdown() | ✅ |
-| PluginManager | triggerRequest() | ✅ |
-| PluginManager | triggerResponse() | ✅ |
-| PluginManager | triggerError() | ✅ |
-| PluginManager | triggerRoute() | ✅ |
-| PluginManager | triggerBuild() | ✅ |
-| PluginManager | triggerBuildComplete() | ✅ |
-| PluginManager | triggerSocket() | ✅ |
-| PluginManager | triggerSocketClose() | ✅ |
-| PluginManager | triggerHealthCheck() | ✅ |
-| PluginManager | triggerHotReload() | ✅ |
+| Module        | Method                 | Status |
+| ------------- | ---------------------- | ------ |
+| PluginManager | register()             | ✅     |
+| PluginManager | use()                  | ✅     |
+| PluginManager | bootstrap()            | ✅     |
+| PluginManager | shutdown()             | ✅     |
+| PluginManager | install()              | ✅     |
+| PluginManager | activate()             | ✅     |
+| PluginManager | deactivate()           | ✅     |
+| PluginManager | uninstall()            | ✅     |
+| PluginManager | getPlugin()            | ✅     |
+| PluginManager | getState()             | ✅     |
+| PluginManager | getRegisteredPlugins() | ✅     |
+| PluginManager | loadFromFile()         | ✅     |
+| PluginManager | loadFromDirectory()    | ✅     |
+| PluginManager | validateDependencies() | ✅     |
+| PluginManager | getConfig()            | ✅     |
+| PluginManager | setConfig()            | ✅     |
+| PluginManager | updateConfig()         | ✅     |
+| PluginManager | getDebugInfo()         | ✅     |
+| PluginManager | getDependencyGraph()   | ✅     |
+| PluginManager | on()                   | ✅     |
+| PluginManager | off()                  | ✅     |
+| PluginManager | emit()                 | ✅     |
+| PluginManager | stopHotReload()        | ✅     |
+| PluginManager | dispose()              | ✅     |
+| PluginManager | triggerInit()          | ✅     |
+| PluginManager | triggerStart()         | ✅     |
+| PluginManager | triggerStop()          | ✅     |
+| PluginManager | triggerShutdown()      | ✅     |
+| PluginManager | triggerRequest()       | ✅     |
+| PluginManager | triggerResponse()      | ✅     |
+| PluginManager | triggerError()         | ✅     |
+| PluginManager | triggerRoute()         | ✅     |
+| PluginManager | triggerBuild()         | ✅     |
+| PluginManager | triggerBuildComplete() | ✅     |
+| PluginManager | triggerSocket()        | ✅     |
+| PluginManager | triggerSocketClose()   | ✅     |
+| PluginManager | triggerHealthCheck()   | ✅     |
+| PluginManager | triggerHotReload()     | ✅     |
 
-### Edge Case Coverage
+### 边界情况覆盖
 
-| Edge case | Status |
-|-----------|--------|
-| Empty plugin list | ✅ |
-| Non-existent plugin | ✅ |
-| Duplicate registration | ✅ |
-| Circular dependency | ✅ |
-| Missing dependency | ✅ |
-| Deep dependency chain | ✅ |
-| Shared dependency | ✅ |
-| State transition validation | ✅ |
-| Plugin replacement | ✅ |
-| Invalid plugin file | ✅ |
-| Non-existent directory | ✅ |
-| Config validation failure | ✅ |
-| Multiple dispose() calls | ✅ |
+| Edge case                   | Status |
+| --------------------------- | ------ |
+| Empty plugin list           | ✅     |
+| Non-existent plugin         | ✅     |
+| Duplicate registration      | ✅     |
+| Circular dependency         | ✅     |
+| Missing dependency          | ✅     |
+| Deep dependency chain       | ✅     |
+| Shared dependency           | ✅     |
+| State transition validation | ✅     |
+| Plugin replacement          | ✅     |
+| Invalid plugin file         | ✅     |
+| Non-existent directory      | ✅     |
+| Config validation failure   | ✅     |
+| Multiple dispose() calls    | ✅     |
 
-### Error Handling Coverage
+### 错误处理覆盖
 
-| Error scenario | Status |
-|----------------|--------|
-| Plugin registration error | ✅ |
-| Plugin install error | ✅ |
-| Plugin activation error | ✅ |
-| Plugin deactivation error | ✅ |
-| Plugin uninstall error | ✅ |
-| Config validation error | ✅ |
-| File load error | ✅ |
-| Directory load error | ✅ |
-| Event hook error | ✅ |
-| continueOnError option | ✅ |
+| Error scenario            | Status |
+| ------------------------- | ------ |
+| Plugin registration error | ✅     |
+| Plugin install error      | ✅     |
+| Plugin activation error   | ✅     |
+| Plugin deactivation error | ✅     |
+| Plugin uninstall error    | ✅     |
+| Config validation error   | ✅     |
+| File load error           | ✅     |
+| Directory load error      | ✅     |
+| Event hook error          | ✅     |
+| continueOnError option    | ✅     |
 
 ---
 
-## 💡 Strengths
+## 💡 优点
 
 1. **Full coverage**: All 39 public API methods have tests
 2. **Edge cases**: 13 edge cases covered
@@ -461,9 +463,10 @@
 
 ## 📊 Conclusion
 
-The @dreamer/plugin library has comprehensive test coverage. All core and advanced features have corresponding tests.
+The @dreamer/plugin library has comprehensive test coverage. All core and
+advanced features have corresponding tests.
 
-### Quality Assessment
+### 质量评估
 
 - ✅ **Feature completeness**: All features implemented and tested
 - ✅ **Code quality**: Clear structure, solid error handling
@@ -471,7 +474,7 @@ The @dreamer/plugin library has comprehensive test coverage. All core and advanc
 - ✅ **Maintainability**: Clear tests, easy to maintain and extend
 - ✅ **Event system**: App-level event hooks complete and stable
 
-### Release Recommendation
+### 发布建议
 
 Based on test results:
 
@@ -481,6 +484,5 @@ Based on test results:
 
 ---
 
-**Report generated**: 2026-01-30
-**Test executor**: Automated test system
+**Report generated**: 2026-01-30 **Test executor**: Automated test system
 **Review status**: ✅ Passed

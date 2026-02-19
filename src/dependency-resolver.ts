@@ -4,6 +4,7 @@
  * 提供插件依赖解析、拓扑排序、循环依赖检测等功能
  */
 
+import { $tr } from "./i18n.ts";
 import type { Plugin } from "./types.ts";
 
 /**
@@ -123,7 +124,10 @@ export function topologicalSort(
   const cycle = detectCircularDependency(plugins);
   if (cycle) {
     throw new Error(
-      `检测到循环依赖: ${cycle.join(" -> ")} -> ${cycle[0]}`,
+      $tr("dependencyResolver.circularDependency", {
+        cycle: cycle.join(" -> "),
+        first: cycle[0],
+      }),
     );
   }
 
@@ -133,7 +137,9 @@ export function topologicalSort(
     const missingList = Object.entries(missing)
       .map(([name, deps]) => `${name}: [${deps.join(", ")}]`)
       .join("; ");
-    throw new Error(`检测到缺失依赖: ${missingList}`);
+    throw new Error(
+      $tr("dependencyResolver.missingDependency", { list: missingList }),
+    );
   }
 
   // 要排序的插件列表
@@ -147,8 +153,9 @@ export function topologicalSort(
    */
   function dfs(pluginName: string): void {
     if (visiting.has(pluginName)) {
-      // 这不应该发生，因为我们已经检测了循环依赖
-      throw new Error(`检测到循环依赖: ${pluginName}`);
+      throw new Error(
+        $tr("dependencyResolver.circularDependencyCycle", { name: pluginName }),
+      );
     }
 
     if (visited.has(pluginName)) {

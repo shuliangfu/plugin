@@ -4,6 +4,7 @@
  * 提供从文件加载插件的功能
  */
 
+import { $tr } from "./i18n.ts";
 import type { Plugin } from "./types.ts";
 
 /**
@@ -43,24 +44,21 @@ export async function loadPluginFromFile(path: string): Promise<Plugin> {
     }
 
     if (!plugin) {
-      throw new Error(
-        `插件文件 "${path}" 未导出插件对象（需要 export default 或 export const plugin）`,
-      );
+      throw new Error($tr("errors.pluginFileNoExport", { path }));
     }
 
     // 验证插件对象
     if (!plugin.name || !plugin.version) {
-      throw new Error(
-        `插件文件 "${path}" 导出的插件对象缺少必需的属性（name 和 version）`,
-      );
+      throw new Error($tr("errors.pluginMissingNameVersion", { path }));
     }
 
     return plugin;
   } catch (error) {
     throw new Error(
-      `加载插件文件失败: ${path} - ${
-        error instanceof Error ? error.message : String(error)
-      }`,
+      $tr("errors.loadPluginFailed", {
+        path,
+        message: error instanceof Error ? error.message : String(error),
+      }),
     );
   }
 }

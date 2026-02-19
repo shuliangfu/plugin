@@ -1,0 +1,32 @@
+{
+  "errors": {
+    "pluginFileNoExport": "Plugin file \"{path}\" does not export a plugin object (expected export default or export const plugin).",
+    "pluginMissingNameVersion": "Plugin exported from file \"{path}\" is missing required properties (name and version).",
+    "loadPluginFailed": "Failed to load plugin file: {path} - {message}",
+    "pluginAlreadyRegistered": "Plugin \"{name}\" is already registered.",
+    "pluginNotRegistered": "Plugin \"{name}\" is not registered.",
+    "pluginWrongStateInstall": "Plugin \"{name}\" is in state \"{state}\", cannot install (only from registered).",
+    "pluginWrongStateActivate": "Plugin \"{name}\" is in state \"{state}\", cannot activate (only from installed or inactive).",
+    "pluginDependencyNotActive": "Plugin \"{name}\" dependency \"{dep}\" is not active (current state: {state}).",
+    "pluginWrongStateDeactivate": "Plugin \"{name}\" is in state \"{state}\", cannot deactivate (only from active).",
+    "pluginWrongStateUninstall": "Plugin \"{name}\" is not in a state that can be uninstalled.",
+    "pluginConfigValidationFailed": "Plugin \"{name}\" config validation failed.",
+    "pluginNotFound": "Plugin \"{name}\" not found.",
+    "circularDependencySingle": "Plugin \"{name}\" has circular dependency: {cycle} -> {first}",
+    "circularDependencyAll": "Circular dependency detected: {cycle} -> {first}",
+    "missingDependencySingle": "Plugin \"{name}\" has missing dependencies: {list}",
+    "missingDependencyAll": "Missing dependencies detected: {list}",
+    "loadDirectoryFailed": "Failed to load plugin directory: {directory} - {message}"
+  },
+  "log": {
+    "hotReloadFailed": "Hot-reload plugin failed: {path}",
+    "loadPluginFileFailed": "Failed to load plugin file: {path}",
+    "fileWatchError": "File watch error: {path}",
+    "watchFileFailed": "Failed to watch file: {path}"
+  },
+  "dependencyResolver": {
+    "circularDependency": "Circular dependency detected: {cycle} -> {first}",
+    "missingDependency": "Missing dependencies detected: {list}",
+    "circularDependencyCycle": "Circular dependency detected: {name}"
+  }
+}

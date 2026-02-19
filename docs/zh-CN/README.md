@@ -3,18 +3,19 @@
 > 一个兼容 Deno 和 Bun
 > 的插件管理系统，提供完整的插件注册、生命周期管理、依赖解析、配置管理、热加载等功能
 
-[English](./README.md) | 中文 (Chinese)
+> [English](../../README.md) | 中文 (Chinese)
 
 [![JSR](https://jsr.io/badges/@dreamer/plugin)](https://jsr.io/@dreamer/plugin)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.md)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../../LICENSE)
 [![Tests](https://img.shields.io/badge/tests-157%20passed-brightgreen)](./TEST_REPORT.md)
 
 ---
 
 ## 🎯 功能
 
-插件管理系统，用于管理应用的插件和扩展功能。插件系统依赖 `@dreamer/service`来注册插件提供的服务，但保持职责分离：service 负责服务管理，plugin
-负责插件生命周期管理。
+插件管理系统，用于管理应用的插件和扩展功能。插件系统依赖
+`@dreamer/service`来注册插件提供的服务，但保持职责分离：service
+负责服务管理，plugin 负责插件生命周期管理。
 
 **设计原则**：Manager
 负责插件生命周期管理（安装、激活、停用、卸载），插件只需实现事件响应钩子（onInit、onRequest
@@ -48,7 +49,7 @@ bunx jsr add @dreamer/plugin
 | **客户端** | -                                | ❌ 不支持（浏览器环境，插件系统是服务端概念）                |
 | **依赖**   | `@dreamer/service@^1.0.0-beta.1` | 📦 用于注册插件提供的服务（必须）                            |
 
-**注意**：@dreamer/plugin 是纯服务端库，不提供客户端子包。
+**注意**：@dreamer/plugin 是纯服务端包，不提供客户端子包。
 
 ---
 
@@ -485,11 +486,14 @@ await pluginManager.triggerHotReload(["src/app.ts"]);
 4. `onRequest` 返回 `Response` 时，后续插件的 `onRequest` 不会执行
 5. `onHealthCheck` 会聚合所有插件的健康状态
 6. 所有事件钩子都是可选的，插件可以选择性地实现需要的事件
-7. **Socket 钩子需要手动触发**：`@dreamer/dweb` 框架不再内置 WebSocket/Socket.IO 支持，需要自己实现并手动调用 `triggerSocket`/`triggerSocketClose`（见下方示例）
+7. **Socket 钩子需要手动触发**：`@dreamer/dweb` 框架不再内置 WebSocket/Socket.IO
+   支持，需要自己实现并手动调用
+   `triggerSocket`/`triggerSocketClose`（见下方示例）
 
 #### Socket 钩子手动触发示例
 
-`@dreamer/dweb` 框架已移除内置的 WebSocket 支持，如需使用 `onSocket` 钩子，需要自己创建 Socket.IO 服务并手动触发：
+`@dreamer/dweb` 框架已移除内置的 WebSocket 支持，如需使用 `onSocket`
+钩子，需要自己创建 Socket.IO 服务并手动触发：
 
 ```typescript
 import { Server } from "socket.io";
@@ -964,7 +968,7 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 ## 📄 许可证
 
-MIT License - 详见 [LICENSE.md](./LICENSE.md)
+Apache License 2.0 - 详见 [LICENSE](../../LICENSE)
 
 ---
 

@@ -6,6 +6,8 @@
 
 import { type FileWatcher, stat, watchFs } from "@dreamer/runtime-adapter";
 
+import { $tr } from "./i18n.ts";
+
 /**
  * 热加载管理器选项
  */
@@ -77,12 +79,12 @@ export class HotReloadManager {
           }
         }
       })().catch((error) => {
-        console.error(`文件监听错误: ${filePath}`, error);
+        console.error($tr("log.fileWatchError", { path: filePath }), error);
       });
 
       this.watchers.set(filePath, watcher);
     } catch (error) {
-      console.error(`监听文件失败: ${filePath}`, error);
+      console.error($tr("log.watchFileFailed", { path: filePath }), error);
     }
   }
 
