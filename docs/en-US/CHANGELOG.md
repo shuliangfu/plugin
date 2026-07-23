@@ -22,7 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   explicitly lock the i18n locale. Tests that assert on `$tr()` Chinese output
   now call `setPluginLocale("zh-CN")` at module level to deterministically
   reproduce zh-CN behavior regardless of CI/development machine locale (same
-  pattern as auth/payment/cache).
+  pattern as auth/payment/cache). 6 test files locked: loader, comprehensive,
+  mod, config, load-directory, debug.
+- **`pathToFileURL` in loader.ts**: `src/loader.ts` now converts file paths to
+  `file://` URLs before dynamic `import()`. On Windows, bare paths like
+  `D:/...` are misinterpreted by Deno as URL scheme "d" ("Unsupported scheme")
+  and by Bun as unresolvable modules; `file:///D:/...` is the cross-runtime
+  standard for dynamic file imports.
 - **9-job CI matrix**: GitHub Actions workflow (`.github/workflows/ci.yml`)
   with 3 Deno v2.9 + 3 Bun + 3 Node 22 jobs across Linux/macOS/Windows.
   `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` for early Node 24 validation.
@@ -48,9 +54,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   different temp files fail with "Cannot find module '/private/var/...'".
   Fixed by creating temp files inside the project directory tree
   (`tests/_tmp_plugins/`) instead of the system temp dir.
-- **CI locale assertions**: 5 test files (loader, comprehensive, mod, config,
-  load-directory) now lock `setPluginLocale("zh-CN")` to ensure Chinese `$tr`
-  assertions pass on CI English locale.
+- **CI locale assertions**: 6 test files (loader, comprehensive, mod, config,
+  load-directory, debug) now lock `setPluginLocale("zh-CN")` to ensure Chinese
+  `$tr` assertions pass on CI English locale.
 
 ### Compatibility
 

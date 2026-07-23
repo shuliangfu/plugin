@@ -4,6 +4,7 @@
  * 提供从文件加载插件的功能
  */
 
+import { pathToFileURL } from "node:url";
 import { $tr } from "./i18n.ts";
 import type { Plugin } from "./types.ts";
 
@@ -17,7 +18,10 @@ import type { Plugin } from "./types.ts";
 export async function loadPluginFromFile(path: string): Promise<Plugin> {
   try {
     // 动态导入插件文件
-    const module = await import(path);
+    // 使用 pathToFileURL 将路径转为 file:// URL：Windows 上裸路径 "D:/..." 的
+    // 驱动器号会被 Deno 误解为 URL scheme（"Unsupported scheme d"），Bun 也无法
+    // 解析；file:// URL 是三端（Deno/Bun/Node）跨平台动态 import 的标准方式。
+    const module = await import(pathToFileURL(path).href);
 
     // 尝试获取插件对象
     // 支持 export default 或命名导出 export const plugin

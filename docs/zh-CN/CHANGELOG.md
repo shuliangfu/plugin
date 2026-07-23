@@ -19,7 +19,12 @@
 - **`setPluginLocale` 导出**：`src/i18n.ts` 新增显式锁定 i18n locale 的导出
   函数。断言 `$tr()` 中文文案的测试在模块级调用 `setPluginLocale("zh-CN")`，
   确保在任意 CI/开发机 locale 下确定性复现 zh-CN 行为（同 auth/payment/cache
-  模式）。
+  模式）。6 个测试文件锁定：loader、comprehensive、mod、config、load-directory、
+  debug。
+- **loader.ts 使用 pathToFileURL**：`src/loader.ts` 在动态 `import()` 前将文件
+  路径转为 `file://` URL。Windows 上裸路径 `D:/...` 被 Deno 误解为 URL scheme
+  "d"（"Unsupported scheme"），Bun 也无法解析；`file:///D:/...` 是三端跨平台
+  动态 import 文件的标准方式。
 - **9 作业 CI 矩阵**：GitHub Actions 工作流（`.github/workflows/ci.yml`），
   3 Deno v2.9 + 3 Bun + 3 Node 22，跨 Linux/macOS/Windows。
   `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 提前验证 Node 24。
@@ -43,8 +48,8 @@
   临时插件文件时，将 `/var` 解析为 `/private/var` 符号链接。首个 import 成功，
   但后续不同临时文件的 import 报 "Cannot find module '/private/var/...'"。
   修复为在项目目录树内（`tests/_tmp_plugins/`）创建临时文件。
-- **CI locale 断言**：5 个测试文件（loader、comprehensive、mod、config、
-  load-directory）锁定 `setPluginLocale("zh-CN")`，确保中文 `$tr` 断言在
+- **CI locale 断言**：6 个测试文件（loader、comprehensive、mod、config、
+  load-directory、debug）锁定 `setPluginLocale("zh-CN")`，确保中文 `$tr` 断言在
   CI 英文 locale 下通过。
 
 ### 兼容性
