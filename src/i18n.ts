@@ -79,3 +79,15 @@ export function $tr(
   }
   return pluginI18n.t(key, params as TranslationParams);
 }
+
+/**
+ * 显式锁定 plugin i18n locale。
+ *
+ * 用于测试在 CI 英文 locale 下确定性复现本地 zh-CN 行为（同 auth/payment/cache
+ * 的 setXxxLocale 模式）。模块导入时已按 detectLocale() 自动初始化，本函数仅覆盖
+ * 当前 locale，不影响 detectLocale 的环境检测逻辑。
+ */
+export function setPluginLocale(locale: Locale): void {
+  if (!pluginI18n) initPluginI18n();
+  pluginI18n?.setLocale(locale);
+}

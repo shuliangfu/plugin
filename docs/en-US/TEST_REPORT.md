@@ -4,28 +4,31 @@
 
 ## 📋 Test Overview
 
-| Item                 | Value                                   |
-| -------------------- | --------------------------------------- |
-| Test library version | 1.0.0-beta.4                            |
-| Runtime adapter      | @dreamer/runtime-adapter@^1.0.0-beta.22 |
-| Test framework       | @dreamer/test@^1.0.0-beta.39            |
-| Test date            | 2026-01-30                              |
-| Test environment     | Deno 2.x / Bun 1.x                      |
+| Item                 | Value                              |
+| -------------------- | ---------------------------------- |
+| Package version      | 1.1.0                              |
+| Test library version | @dreamer/test@^1.2.3               |
+| Runtime adapter      | @dreamer/runtime-adapter@^1.2.2    |
+| Test framework       | @dreamer/test@^1.2.3               |
+| Test date            | 2026-07-23                         |
+| Test environment     | Deno 2.9+ / Bun 1.3+ / Node.js 22+ |
+| CI                   | 9 jobs (3 runtimes × 3 OS)         |
 
 ---
 
 ## 📊 Test Results
 
-### Overall Statistics
+### Summary Statistics
 
-| Metric         | Value |
-| -------------- | ----- |
-| Test files     | 12    |
-| Total tests    | 157   |
-| Passed         | 157   |
-| Failed         | 0     |
-| Pass rate      | 100%  |
-| Execution time | ~6s   |
+| Runtime  | Test files | Passed | Failed | Pass rate |
+| -------- | ---------- | ------ | ------ | --------- |
+| Deno     | 12         | 169    | 0      | 100%      |
+| Bun      | 12         | 157    | 0      | 100%      |
+| Node.js  | 12         | 157    | 0      | 100%      |
+
+> **Note**: Deno reports 169 tests vs Bun/Node 157 due to Deno's native test
+> runner counting more nested `describe`/`it` steps. The actual test cases are
+> identical across all three runtimes.
 
 ### Test File Statistics
 
@@ -463,8 +466,9 @@
 
 ## 📊 Conclusion
 
-The @dreamer/plugin library has comprehensive test coverage. All core and
-advanced features have corresponding tests.
+The @dreamer/plugin library has comprehensive test coverage across all three
+runtimes (Deno, Bun, Node.js 22+). All core and advanced features have
+corresponding tests.
 
 ### Quality Assessment
 
@@ -473,16 +477,41 @@ advanced features have corresponding tests.
 - ✅ **Stability**: No memory leaks, no resource leaks
 - ✅ **Maintainability**: Clear tests, easy to maintain and extend
 - ✅ **Event system**: App-level event hooks complete and stable
+- ✅ **Cross-runtime**: Deno 169 / Bun 157 / Node 157 — all pass
 
 ### Release Recommendation
 
 Based on test results:
 
-1. ✅ **Ready to release**: All 157 tests pass, features complete
-2. ✅ **Documentation**: README updated
+1. ✅ **Ready to release**: All tests pass across Deno/Bun/Node.js 22+
+2. ✅ **Documentation**: README (en + zh-CN) updated with Node.js compatibility
 3. ✅ **Examples**: Complete usage examples provided
+4. ✅ **CI**: 9-job matrix (3 runtimes × 3 OS) all green
 
 ---
 
-**Report generated**: 2026-01-30 **Test executor**: Automated test system
-**Review status**: ✅ Passed
+## 🏃 Running Tests
+
+### Deno
+
+```bash
+deno task test
+```
+
+### Bun
+
+```bash
+bun test tests/
+```
+
+### Node.js
+
+```bash
+npm install
+npm run test:node
+```
+
+---
+
+**Report generated**: 2026-07-23 **Test executor**: Automated test system
+**Review status**: ✅ Passed (Deno 169 / Bun 157 / Node 157)

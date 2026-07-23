@@ -7,8 +7,8 @@ deno.lock
 
 # 依赖
 node_modules
-package.json
 bun.lock
+package-lock.json
 
 # 构建输出
 dist/
@@ -31,8 +31,8 @@ Thumbs.db
 tests/data/
 tests/output/
 tests/**/data/
+tests/_tmp_plugins/
 .snapshots/
-.npmrc
 
 # 测试覆盖率
 coverage/

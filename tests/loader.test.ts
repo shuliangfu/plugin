@@ -4,12 +4,21 @@
 
 import { makeTempFile, remove, writeTextFile } from "@dreamer/runtime-adapter";
 import { describe, expect, it } from "@dreamer/test";
+import { setPluginLocale } from "../src/i18n.ts";
 import { loadPluginFromFile } from "../src/loader.ts";
+import { PLUGIN_TMP_DIR } from "./_test-helpers.ts";
+
+// 锁定中文 locale：本测试断言 $tr 返回中文文案（"加载插件文件失败"），
+// 显式锁定 zh-CN 确保在任何 CI/开发机 locale 下确定性通过。
+setPluginLocale("zh-CN");
 
 describe("插件加载器", () => {
   describe("loadPluginFromFile", () => {
     it("应该从文件加载插件（default export）", async () => {
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent = `
         const plugin = {
           name: "test-plugin",
@@ -28,7 +37,10 @@ describe("插件加载器", () => {
     });
 
     it("应该从文件加载插件（named export 'plugin'）", async () => {
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent = `
         export const plugin = {
           name: "test-plugin",
@@ -46,7 +58,10 @@ describe("插件加载器", () => {
     });
 
     it("应该拒绝加载无效的插件文件（缺少 name）", async () => {
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent = `
         export default {
           version: "1.0.0",
@@ -72,7 +87,10 @@ describe("插件加载器", () => {
     });
 
     it("应该拒绝加载无效的插件文件（缺少 version）", async () => {
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent = `
         export default {
           name: "test-plugin",

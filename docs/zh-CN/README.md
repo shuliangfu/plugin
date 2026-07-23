@@ -1,13 +1,13 @@
 # @dreamer/plugin
 
-> 一个兼容 Deno 和 Bun
+> 一个兼容 Deno、Bun、Node.js 22+
 > 的插件管理系统，提供完整的插件注册、生命周期管理、依赖解析、配置管理、热加载等功能
 
 > [English](../../README.md) | 中文 (Chinese)
 
 [![JSR](https://jsr.io/badges/@dreamer/plugin)](https://jsr.io/@dreamer/plugin)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../../LICENSE)
-[![Tests](https://img.shields.io/badge/tests-157%20passed-brightgreen)](./TEST_REPORT.md)
+[![Tests](https://img.shields.io/badge/tests-157%20passed%20(3%20runtimes)-brightgreen)](./TEST_REPORT.md)
 
 ---
 
@@ -37,17 +37,24 @@ deno add jsr:@dreamer/plugin
 bunx jsr add @dreamer/plugin
 ```
 
+### Node.js
+
+```bash
+npx jsr add @dreamer/plugin
+```
+
 ---
 
 ## 🌍 环境兼容性
 
-| 环境       | 版本要求                         | 状态                                                         |
-| ---------- | -------------------------------- | ------------------------------------------------------------ |
-| **Deno**   | 2.5+                             | ✅ 完全支持                                                  |
-| **Bun**    | 1.0+                             | ✅ 完全支持                                                  |
-| **服务端** | -                                | ✅ 支持（兼容 Deno 和 Bun 运行时，插件系统是服务端架构模式） |
-| **客户端** | -                                | ❌ 不支持（浏览器环境，插件系统是服务端概念）                |
-| **依赖**   | `@dreamer/service@^1.0.0-beta.1` | 📦 用于注册插件提供的服务（必须）                            |
+| 环境       | 版本要求                | 状态                                                              |
+| ---------- | ----------------------- | ----------------------------------------------------------------- |
+| **Deno**   | 2.9+                    | ✅ 完全支持                                                       |
+| **Bun**    | 1.3+                    | ✅ 完全支持                                                       |
+| **Node.js** | 22+                    | ✅ 完全支持（通过 `tsx` 进行 TypeScript 转译）                    |
+| **服务端** | -                       | ✅ 支持（兼容 Deno、Bun、Node.js 运行时，插件系统是服务端架构模式） |
+| **客户端** | -                       | ❌ 不支持（浏览器环境，插件系统是服务端概念）                     |
+| **依赖**   | `@dreamer/service@^1.1.0` | 📦 用于注册插件提供的服务（必须）                                |
 
 **注意**：@dreamer/plugin 是纯服务端包，不提供客户端子包。
 
@@ -905,13 +912,15 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 ## 📊 测试报告
 
-| 指标         | 数值       |
-| ------------ | ---------- |
-| 测试时间     | 2026-01-30 |
-| 测试文件数   | 12         |
-| 测试用例总数 | 157        |
-| 通过率       | 100%       |
-| 执行时间     | ~6s        |
+| 指标         | 数值                                 |
+| ------------ | ------------------------------------ |
+| 测试时间     | 2026-07-23                           |
+| 测试文件数   | 12                                   |
+| Deno         | 169 通过，0 失败                     |
+| Bun          | 157 通过，0 失败                     |
+| Node.js 22   | 157 通过，0 失败                     |
+| 通过率       | 100%（三端全通过）                   |
+| CI           | 9 作业（Deno/Bun/Node × Linux/macOS/Windows） |
 
 **测试覆盖**：
 

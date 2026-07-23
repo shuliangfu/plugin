@@ -13,6 +13,11 @@ import {
   PluginManager,
   topologicalSort,
 } from "../src/mod.ts";
+import { setPluginLocale } from "../src/i18n.ts";
+
+// 锁定中文 locale：本测试断言 $tr 返回中文文案（"已注册"/"未注册"/"无法安装"/"无法激活"/"无法停用"/"循环依赖"/"缺失依赖"等），
+// 显式锁定 zh-CN 确保在任何 CI/开发机 locale 下确定性通过。
+setPluginLocale("zh-CN");
 
 describe("PluginManager", () => {
   describe("基础功能", () => {

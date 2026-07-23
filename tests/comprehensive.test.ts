@@ -5,11 +5,17 @@
 import { makeTempFile, remove, writeTextFile } from "@dreamer/runtime-adapter";
 import { ServiceContainer } from "@dreamer/service";
 import { describe, expect, it } from "@dreamer/test";
+import { setPluginLocale } from "../src/i18n.ts";
 import {
   type Plugin,
   PluginManager,
   type RouteDefinition,
 } from "../src/mod.ts";
+import { PLUGIN_TMP_DIR } from "./_test-helpers.ts";
+
+// 锁定中文 locale：本测试断言 $tr 返回中文文案（"未注册"/"循环依赖"/"缺失依赖"/"无法激活"等），
+// 显式锁定 zh-CN 确保在任何 CI/开发机 locale 下确定性通过。
+setPluginLocale("zh-CN");
 
 describe("综合测试", () => {
   describe("use() 便捷方法", () => {
@@ -303,7 +309,10 @@ describe("综合测试", () => {
       const container = new ServiceContainer();
       const manager = new PluginManager(container);
 
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent = `
         export default {
           name: "file-plugin",

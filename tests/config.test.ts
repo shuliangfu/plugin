@@ -5,6 +5,11 @@
 import { ServiceContainer } from "@dreamer/service";
 import { describe, expect, it } from "@dreamer/test";
 import { type Plugin, PluginManager } from "../src/mod.ts";
+import { setPluginLocale } from "../src/i18n.ts";
+
+// 锁定中文 locale：本测试断言 $tr 返回中文文案（"配置验证失败"/"未注册"），
+// 显式锁定 zh-CN 确保在任何 CI/开发机 locale 下确定性通过。
+setPluginLocale("zh-CN");
 
 describe("配置管理", () => {
   describe("getConfig", () => {

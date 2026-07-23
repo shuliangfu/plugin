@@ -4,13 +4,15 @@
 
 ## 📋 测试概览
 
-| 项           | 值                                      |
-| ------------ | --------------------------------------- |
-| 测试库版本   | 1.0.0-beta.4                            |
-| 运行时适配器 | @dreamer/runtime-adapter@^1.0.0-beta.22 |
-| 测试框架     | @dreamer/test@^1.0.0-beta.39            |
-| 测试日期     | 2026-01-30                              |
-| 测试环境     | Deno 2.x / Bun 1.x                      |
+| 项           | 值                                 |
+| ------------ | ---------------------------------- |
+| 包版本       | 1.1.0                              |
+| 测试库版本   | @dreamer/test@^1.2.3               |
+| 运行时适配器 | @dreamer/runtime-adapter@^1.2.2    |
+| 测试框架     | @dreamer/test@^1.2.3               |
+| 测试日期     | 2026-07-23                         |
+| 测试环境     | Deno 2.9+ / Bun 1.3+ / Node.js 22+ |
+| CI           | 9 作业（3 运行时 × 3 操作系统）    |
 
 ---
 
@@ -18,14 +20,15 @@
 
 ### 总体统计
 
-| 指标       | 值   |
-| ---------- | ---- |
-| 测试文件数 | 12   |
-| 测试总数   | 157  |
-| 通过       | 157  |
-| 失败       | 0    |
-| 通过率     | 100% |
-| 执行时间   | ~6s  |
+| 运行时   | 测试文件数 | 通过 | 失败 | 通过率 |
+| -------- | ---------- | ---- | ---- | ------ |
+| Deno     | 12         | 169  | 0    | 100%   |
+| Bun      | 12         | 157  | 0    | 100%   |
+| Node.js  | 12         | 157  | 0    | 100%   |
+
+> **说明**：Deno 报告 169 个测试 vs Bun/Node 157 个，是因为 Deno 原生测试
+> 运行器统计更多嵌套 `describe`/`it` 步骤。三个运行时的实际测试用例完全
+> 相同。
 
 ### 测试文件统计
 
@@ -461,28 +464,53 @@
 
 ---
 
-## 📊 Conclusion
+## 📊 结论
 
-The @dreamer/plugin library has comprehensive test coverage. All core and
-advanced features have corresponding tests.
+@dreamer/plugin 库在三端运行时（Deno、Bun、Node.js 22+）上均有全面测试覆盖。
+所有核心和高级功能都有对应的测试。
 
 ### 质量评估
 
-- ✅ **Feature completeness**: All features implemented and tested
-- ✅ **Code quality**: Clear structure, solid error handling
-- ✅ **Stability**: No memory leaks, no resource leaks
-- ✅ **Maintainability**: Clear tests, easy to maintain and extend
-- ✅ **Event system**: App-level event hooks complete and stable
+- ✅ **功能完整性**：所有功能已实现并测试
+- ✅ **代码质量**：结构清晰，错误处理完善
+- ✅ **稳定性**：无内存泄漏，无资源泄漏
+- ✅ **可维护性**：测试清晰，易于维护和扩展
+- ✅ **事件系统**：应用级事件钩子完整且稳定
+- ✅ **跨运行时**：Deno 169 / Bun 157 / Node 157 — 全部通过
 
 ### 发布建议
 
-Based on test results:
+基于测试结果：
 
-1. ✅ **Ready to release**: All 157 tests pass, features complete
-2. ✅ **Documentation**: README updated
-3. ✅ **Examples**: Complete usage examples provided
+1. ✅ **可以发布**：所有测试在 Deno/Bun/Node.js 22+ 三端通过
+2. ✅ **文档**：README（中英文）已更新 Node.js 兼容性信息
+3. ✅ **示例**：提供完整使用示例
+4. ✅ **CI**：9 作业矩阵（3 运行时 × 3 操作系统）全绿
 
 ---
 
-**Report generated**: 2026-01-30 **Test executor**: Automated test system
-**Review status**: ✅ Passed
+## 🏃 运行测试
+
+### Deno
+
+```bash
+deno task test
+```
+
+### Bun
+
+```bash
+bun test tests/
+```
+
+### Node.js
+
+```bash
+npm install
+npm run test:node
+```
+
+---
+
+**报告生成时间**：2026-07-23 **测试执行者**：自动化测试系统
+**审查状态**：✅ 通过（Deno 169 / Bun 157 / Node 157）

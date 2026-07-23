@@ -10,7 +10,13 @@ import {
 } from "@dreamer/runtime-adapter";
 import { ServiceContainer } from "@dreamer/service";
 import { describe, expect, it } from "@dreamer/test";
+import { setPluginLocale } from "../src/i18n.ts";
 import { PluginManager } from "../src/mod.ts";
+import { PLUGIN_TMP_DIR } from "./_test-helpers.ts";
+
+// 锁定中文 locale：本测试断言 $tr 返回中文文案（"加载插件目录失败"），
+// 显式锁定 zh-CN 确保在任何 CI/开发机 locale 下确定性通过。
+setPluginLocale("zh-CN");
 
 describe("从目录加载插件", () => {
   describe("loadFromDirectory", () => {
@@ -19,7 +25,7 @@ describe("从目录加载插件", () => {
       const manager = new PluginManager(container);
 
       // 创建临时目录
-      const tempDir = await makeTempDir();
+      const tempDir = await makeTempDir({ dir: PLUGIN_TMP_DIR });
       const plugin1Path = join(tempDir, "plugin1.ts");
       const plugin2Path = join(tempDir, "plugin2.ts");
 
@@ -49,7 +55,7 @@ describe("从目录加载插件", () => {
       const manager = new PluginManager(container);
 
       // 创建临时目录
-      const tempDir = await makeTempDir();
+      const tempDir = await makeTempDir({ dir: PLUGIN_TMP_DIR });
       const pluginPath = join(tempDir, "plugin.ts");
       const textPath = join(tempDir, "readme.txt");
       const jsonPath = join(tempDir, "config.json");
@@ -80,7 +86,7 @@ describe("从目录加载插件", () => {
       });
 
       // 创建临时目录
-      const tempDir = await makeTempDir();
+      const tempDir = await makeTempDir({ dir: PLUGIN_TMP_DIR });
       const validPluginPath = join(tempDir, "valid.ts");
       const invalidPluginPath = join(tempDir, "invalid.ts");
 
@@ -111,7 +117,7 @@ describe("从目录加载插件", () => {
       });
 
       // 创建临时目录
-      const tempDir = await makeTempDir();
+      const tempDir = await makeTempDir({ dir: PLUGIN_TMP_DIR });
       const validPluginPath = join(tempDir, "valid.ts");
       const invalidPluginPath = join(tempDir, "invalid.ts");
 

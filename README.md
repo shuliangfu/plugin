@@ -1,25 +1,27 @@
 # @dreamer/plugin
 
-> A plugin management system compatible with Deno and Bun, providing complete
-> plugin registration, lifecycle management, dependency resolution, config
-> management, hot reload, and more.
+> A plugin management system compatible with Deno, Bun, and Node.js 22+,
+> providing complete plugin registration, lifecycle management, dependency
+> resolution, config management, hot reload, and more.
 
 > [English](./README.md) (root) | [中文 (Chinese)](./docs/zh-CN/README.md)
 
 [![JSR](https://jsr.io/badges/@dreamer/plugin)](https://jsr.io/@dreamer/plugin)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Tests: 157 passed](https://img.shields.io/badge/Tests-157%20passed-brightgreen)](./docs/en-US/TEST_REPORT.md)
+[![Tests: 157 passed (3 runtimes)](https://img.shields.io/badge/Tests-157%20passed%20(3%20runtimes)-brightgreen)](./docs/en-US/TEST_REPORT.md)
 
 **Changelog**: [English](./docs/en-US/CHANGELOG.md) |
 [中文 (Chinese)](./docs/zh-CN/CHANGELOG.md)
 
-### [1.0.2] - 2026-02-19
+### [1.1.0] - 2026-07-23
 
-- **Changed**: i18n auto-initializes on module load; `initPluginI18n` no longer
-  exported. **Fixed**: Test assertions aligned with i18n error messages
-  (getDebugInfo / pluginNotFound, loadPluginFromFile /
-  pluginMissingNameVersion). Full history:
-  [Changelog](./docs/en-US/CHANGELOG.md)
+- **Added**: Node.js 22+ compatibility (via `tsx`); `setPluginLocale` export for
+  deterministic locale locking; 9-job CI matrix (Deno/Bun/Node × Linux/macOS/Windows);
+  project-local temp directory to fix Bun macOS dynamic-import of temp files.
+  **Changed**: Dependencies bumped (i18n ^1.1.2, service ^1.1.0, runtime-adapter
+  ^1.2.2, test ^1.2.3). **Fixed**: Bun dynamic import of temp plugin files on
+  macOS (`/var` → `/private/var` symlink); CI locale assertions locked to zh-CN.
+  Full history: [Changelog](./docs/en-US/CHANGELOG.md)
 
 ---
 
@@ -50,17 +52,24 @@ deno add jsr:@dreamer/plugin
 bunx jsr add @dreamer/plugin
 ```
 
+### Node.js
+
+```bash
+npx jsr add @dreamer/plugin
+```
+
 ---
 
 ## 🌍 Environment compatibility
 
-| Environment    | Version requirement              | Status                                                                                       |
-| -------------- | -------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Deno**       | 2.5+                             | ✅ Fully supported                                                                           |
-| **Bun**        | 1.0+                             | ✅ Fully supported                                                                           |
-| **Server**     | -                                | ✅ Supported (compatible with Deno and Bun runtimes; plugin system is a server-side pattern) |
-| **Client**     | -                                | ❌ Not supported (browser environment; plugin system is a server-side concept)               |
-| **Dependency** | `@dreamer/service@^1.0.0-beta.1` | 📦 Required for registering services provided by plugins                                     |
+| Environment    | Version requirement      | Status                                                                                          |
+| -------------- | ------------------------ | ----------------------------------------------------------------------------------------------- |
+| **Deno**       | 2.9+                     | ✅ Fully supported                                                                              |
+| **Bun**        | 1.3+                     | ✅ Fully supported                                                                              |
+| **Node.js**    | 22+                      | ✅ Fully supported (via `tsx` for TypeScript transpilation)                                     |
+| **Server**     | -                        | ✅ Supported (compatible with Deno, Bun, and Node.js runtimes; plugin system is a server-side pattern) |
+| **Client**     | -                        | ❌ Not supported (browser environment; plugin system is a server-side concept)                  |
+| **Dependency** | `@dreamer/service@^1.1.0` | 📦 Required for registering services provided by plugins                                        |
 
 **Note**: @dreamer/plugin is a server-side-only package and does not provide a
 client sub-package.
@@ -932,13 +941,15 @@ pluginManager.on("plugin:replaced", (name, oldPlugin, newPlugin) => {
 
 ## 📊 Test report
 
-| Metric      | Value      |
-| ----------- | ---------- |
-| Test date   | 2026-01-30 |
-| Test files  | 12         |
-| Total cases | 157        |
-| Pass rate   | 100%       |
-| Duration    | ~6s        |
+| Metric      | Value                                |
+| ----------- | ------------------------------------ |
+| Test date   | 2026-07-23                           |
+| Test files  | 12                                   |
+| Deno        | 169 passed, 0 failed                 |
+| Bun         | 157 passed, 0 failed                 |
+| Node.js 22  | 157 passed, 0 failed                 |
+| Pass rate   | 100% (all 3 runtimes)               |
+| CI          | 9 jobs (Deno/Bun/Node × Linux/macOS/Windows) |
 
 **Coverage**:
 

@@ -6,6 +6,7 @@ import { makeTempFile, remove, writeTextFile } from "@dreamer/runtime-adapter";
 import { ServiceContainer } from "@dreamer/service";
 import { describe, expect, it } from "@dreamer/test";
 import { PluginManager } from "../src/mod.ts";
+import { PLUGIN_TMP_DIR } from "./_test-helpers.ts";
 
 describe("热加载", () => {
   describe("HotReloadManager", () => {
@@ -25,7 +26,10 @@ describe("热加载", () => {
       });
 
       // 创建临时插件文件
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent1 = `
         export default {
           name: "test-plugin",
@@ -81,7 +85,10 @@ describe("热加载", () => {
       });
 
       // 创建临时插件文件
-      const tempFile = await makeTempFile({ suffix: ".ts" });
+      const tempFile = await makeTempFile({
+        suffix: ".ts",
+        dir: PLUGIN_TMP_DIR,
+      });
       const pluginContent = `
         export default {
           name: "test-plugin",

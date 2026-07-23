@@ -9,6 +9,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] - 2026-07-23
+
+### Added
+
+- **Node.js 22+ compatibility**: Full cross-runtime support for Deno, Bun, and
+  Node.js 22+. The plugin system now runs natively on Node.js via `tsx` for
+  TypeScript transpilation. Added `package.json` with `engines.node >= 22`,
+  `test:node` script (tsx-based), and `tsconfig.json` (Bundler module
+  resolution).
+- **`setPluginLocale` export**: New exported function in `src/i18n.ts` to
+  explicitly lock the i18n locale. Tests that assert on `$tr()` Chinese output
+  now call `setPluginLocale("zh-CN")` at module level to deterministically
+  reproduce zh-CN behavior regardless of CI/development machine locale (same
+  pattern as auth/payment/cache).
+- **9-job CI matrix**: GitHub Actions workflow (`.github/workflows/ci.yml`)
+  with 3 Deno v2.9 + 3 Bun + 3 Node 22 jobs across Linux/macOS/Windows.
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` for early Node 24 validation.
+- **Project-local temp directory for tests**: `tests/_test-helpers.ts` exports
+  `PLUGIN_TMP_DIR` (project-internal `tests/_tmp_plugins/`) to avoid Bun's
+  macOS dynamic-import failure on system temp paths (`/var/folders/.../T/`
+  → `/private/var/...` symlink resolution breaks subsequent imports).
+
+### Changed
+
+- **Dependencies bumped**: `@dreamer/i18n` ^1.0.1 → ^1.1.2, `@dreamer/service`
+  ^1.0.2 → ^1.1.0, `@dreamer/runtime-adapter` ^1.0.18 → ^1.2.2, `@dreamer/test`
+  ^1.0.10 → ^1.2.3. All dependencies now support Node.js 22+.
+- **deno.json tasks**: Added `test`, `test:node`, `check`, `lint`, `fmt` tasks.
+  `minimumDependencyAge: 0` for faster iteration.
+- **`.gitignore`**: Added `package-lock.json` and `tests/_tmp_plugins/`.
+
+### Fixed
+
+- **Bun dynamic import of temp files**: On macOS, Bun resolves `/var` →
+  `/private/var` symlink when dynamically importing temp plugin files from the
+  system temp directory. The first import succeeds but subsequent imports of
+  different temp files fail with "Cannot find module '/private/var/...'".
+  Fixed by creating temp files inside the project directory tree
+  (`tests/_tmp_plugins/`) instead of the system temp dir.
+- **CI locale assertions**: 5 test files (loader, comprehensive, mod, config,
+  load-directory) now lock `setPluginLocale("zh-CN")` to ensure Chinese `$tr`
+  assertions pass on CI English locale.
+
+### Compatibility
+
+- Deno 2.9+
+- Bun 1.3+
+- Node.js 22+
+
+### Tests
+
+- Deno: 169 passed, 0 failed
+- Bun: 157 passed, 0 failed
+- Node.js: 157 passed, 0 failed
+- Cross-runtime difference (Deno 169 vs Bun/Node 157) is due to Deno's native
+  test runner counting more nested steps.
+
+---
+
 ## [1.0.2] - 2026-02-19
 
 ### Changed

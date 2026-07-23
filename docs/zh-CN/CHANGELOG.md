@@ -8,6 +8,61 @@
 
 ---
 
+## [1.1.0] - 2026-07-23
+
+### 新增
+
+- **Node.js 22+ 兼容**：完整支持 Deno、Bun、Node.js 22+ 三端运行。插件系统
+  通过 `tsx` 进行 TypeScript 转译，在 Node.js 上原生运行。新增 `package.json`
+  （`engines.node >= 22`、基于 tsx 的 `test:node` 脚本）与 `tsconfig.json`
+  （Bundler 模块解析）。
+- **`setPluginLocale` 导出**：`src/i18n.ts` 新增显式锁定 i18n locale 的导出
+  函数。断言 `$tr()` 中文文案的测试在模块级调用 `setPluginLocale("zh-CN")`，
+  确保在任意 CI/开发机 locale 下确定性复现 zh-CN 行为（同 auth/payment/cache
+  模式）。
+- **9 作业 CI 矩阵**：GitHub Actions 工作流（`.github/workflows/ci.yml`），
+  3 Deno v2.9 + 3 Bun + 3 Node 22，跨 Linux/macOS/Windows。
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 提前验证 Node 24。
+- **项目内测试临时目录**：`tests/_test-helpers.ts` 导出 `PLUGIN_TMP_DIR`
+  （项目内 `tests/_tmp_plugins/`），规避 Bun 在 macOS 上对系统 temp 路径
+  （`/var/folders/.../T/` → `/private/var/...` 符号链接解析）的动态 import
+  失败。
+
+### 变更
+
+- **依赖升级**：`@dreamer/i18n` ^1.0.1 → ^1.1.2、`@dreamer/service`
+  ^1.0.2 → ^1.1.0、`@dreamer/runtime-adapter` ^1.0.18 → ^1.2.2、
+  `@dreamer/test` ^1.0.10 → ^1.2.3。所有依赖均已支持 Node.js 22+。
+- **deno.json tasks**：新增 `test`、`test:node`、`check`、`lint`、`fmt` 任务。
+  `minimumDependencyAge: 0` 加速迭代。
+- **`.gitignore`**：新增 `package-lock.json` 与 `tests/_tmp_plugins/`。
+
+### 修复
+
+- **Bun 动态 import 临时文件**：macOS 上 Bun 动态 import 系统 temp 目录中的
+  临时插件文件时，将 `/var` 解析为 `/private/var` 符号链接。首个 import 成功，
+  但后续不同临时文件的 import 报 "Cannot find module '/private/var/...'"。
+  修复为在项目目录树内（`tests/_tmp_plugins/`）创建临时文件。
+- **CI locale 断言**：5 个测试文件（loader、comprehensive、mod、config、
+  load-directory）锁定 `setPluginLocale("zh-CN")`，确保中文 `$tr` 断言在
+  CI 英文 locale 下通过。
+
+### 兼容性
+
+- Deno 2.9+
+- Bun 1.3+
+- Node.js 22+
+
+### 测试
+
+- Deno：169 通过，0 失败
+- Bun：157 通过，0 失败
+- Node.js：157 通过，0 失败
+- 跨运行时差异（Deno 169 vs Bun/Node 157）是因为 Deno 原生测试运行器统计
+  更多嵌套步骤。
+
+---
+
 ## [1.0.2] - 2026-02-19
 
 ### 变更
