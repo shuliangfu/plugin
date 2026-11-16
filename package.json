@@ -18,8 +18,8 @@
     "@dreamer/service": "npm:@jsr/dreamer__service@^1.1.0"
   },
   "devDependencies": {
-    "@dreamer/test": "npm:@jsr/dreamer__test@^1.2.3",
-    "tsx": "^4.19.2"
+    "@dreamer/test": "npm:@jsr/dreamer__test@^1.2.4",
+    "tsx": "^4.23.15"
   },
   "engines": {
     "bun": ">=1.3",
