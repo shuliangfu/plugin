@@ -4,15 +4,15 @@
 
 ## 📋 Test Overview
 
-| Item                 | Value                              |
-| -------------------- | ---------------------------------- |
-| Package version      | 1.1.0                              |
-| Test library version | @dreamer/test@^1.2.3               |
-| Runtime adapter      | @dreamer/runtime-adapter@^1.2.2    |
-| Test framework       | @dreamer/test@^1.2.3               |
-| Test date            | 2026-07-23                         |
-| Test environment     | Deno 2.9+ / Bun 1.3+ / Node.js 22+ |
-| CI                   | 9 jobs (3 runtimes × 3 OS)         |
+| Item                 | Value                                    |
+| -------------------- | ---------------------------------------- |
+| Package version      | 1.1.1                                    |
+| Test library version | @dreamer/test@^1.2.5                     |
+| Runtime adapter      | @dreamer/runtime-adapter@^1.2.3          |
+| Test framework       | @dreamer/test@^1.2.5                     |
+| Test date            | 2026-11-23                               |
+| Test environment     | Deno 2.9.8 / Bun 1.4.5 / Node.js 22.22.2 |
+| CI                   | 9 jobs (3 runtimes × 3 OS)               |
 
 ---
 
@@ -20,20 +20,22 @@
 
 ### Summary Statistics
 
-| Runtime  | Test files | Passed | Failed | Pass rate |
-| -------- | ---------- | ------ | ------ | --------- |
-| Deno     | 12         | 169    | 0      | 100%      |
-| Bun      | 12         | 157    | 0      | 100%      |
-| Node.js  | 12         | 157    | 0      | 100%      |
+| Runtime | Test files | Passed | Failed | Pass rate |
+| ------- | ---------- | ------ | ------ | --------- |
+| Deno    | 13         | 175    | 0      | 100%      |
+| Bun     | 13         | 162    | 0      | 100%      |
+| Node.js | 13         | 162    | 0      | 100%      |
 
-> **Note**: Deno reports 169 tests vs Bun/Node 157 due to Deno's native test
-> runner counting more nested `describe`/`it` steps. The actual test cases are
-> identical across all three runtimes.
+> **Note**: Deno reports 175 tests vs Bun/Node 162 because Deno's native test
+> runner counts lifecycle hooks and more nested `describe`/`it` steps. The
+> actual test cases are identical across all three runtimes. This release adds
+> `hook-index.test.ts`.
 
 ### Test File Statistics
 
 | File                      | Count | Status        |
 | ------------------------- | ----- | ------------- |
+| `hook-index.test.ts`      | 5     | ✅ All passed |
 | `comprehensive.test.ts`   | 48    | ✅ All passed |
 | `app-events.test.ts`      | 20    | ✅ All passed |
 | `mod.test.ts`             | 34    | ✅ All passed |
