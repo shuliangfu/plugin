@@ -1,5 +1,5 @@
 # CI: 三端跨平台测试（Deno / Bun / Node.js 22+），验证跨运行时兼容性
-# plugin 全部 12 个测试文件均为单元测试（纯逻辑，无外部服务、无 Chromium）。
+# plugin 全部 13 个测试文件均为单元测试（纯逻辑，无外部服务、无 Chromium）。
 name: CI
 
 on:
@@ -41,7 +41,7 @@ jobs:
         run: deno lint src/
 
       - name: Test (Deno)
-        run: deno test -A tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts
+        run: deno test -A tests/hook-index.test.ts tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts
 
   # ─────────────────────────────────────────────────────────────────────────
   # Bun（Linux / macOS / Windows）
@@ -61,7 +61,7 @@ jobs:
         run: bun install
 
       - name: Test (Bun)
-        run: bun test tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts
+        run: bun test tests/hook-index.test.ts tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts
 
   # ─────────────────────────────────────────────────────────────────────────
   # Node.js 22（Linux / macOS / Windows）

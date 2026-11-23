@@ -31,6 +31,15 @@ import type {
   SocketContext,
 } from "./types.ts";
 
+/** 插件对象上不是事件钩子的键 */
+const NON_HOOK_PLUGIN_KEYS = new Set([
+  "name",
+  "version",
+  "dependencies",
+  "config",
+  "validateConfig",
+]);
+
 /**
  * 插件管理器类
  *
@@ -54,6 +63,12 @@ export class PluginManager {
 
   /** 插件错误映射表（记录每个插件的错误） */
   private pluginErrors: Map<string, Error> = new Map();
+
+  /**
+   * hook 名 → 已激活且实现该钩子的插件（按注册顺序）。
+   * 请求热路径只遍历实现了该钩子的插件。
+   */
+  private hookIndex = new Map<string, Plugin[]>();
 
   /** 事件发射器 */
   private eventEmitter: EventEmitter = new EventEmitter();
@@ -133,6 +148,7 @@ export class PluginManager {
 
     this.plugins.set(plugin.name, plugin);
     this.pluginStates.set(plugin.name, "registered");
+    this.rebuildHookIndex();
 
     // 触发注册事件
     this.eventEmitter.emit("plugin:registered", plugin.name, plugin);
@@ -279,6 +295,39 @@ export class PluginManager {
   }
 
   /**
+   * 返回已激活且实现了指定钩子的插件，顺序与注册顺序一致
+   * （与 `getRegisteredPlugins()` 中 active 插件的相对顺序相同）。
+   * 返回浅拷贝，调用方可安全 `reverse()`。
+   *
+   * @param eventName 钩子名（如 `onRequest`）
+   */
+  getActivePluginsWithHook(eventName: string): Plugin[] {
+    const list = this.hookIndex.get(eventName);
+    return list ? list.slice() : [];
+  }
+
+  /**
+   * 按注册顺序重建钩子索引。插件数量通常很小，在生命周期变更时全量重建更安全。
+   */
+  private rebuildHookIndex(): void {
+    this.hookIndex.clear();
+    for (const [name, plugin] of this.plugins) {
+      if (this.pluginStates.get(name) !== "active") continue;
+      const rec = plugin as unknown as Record<string, unknown>;
+      for (const key of Object.keys(plugin)) {
+        if (NON_HOOK_PLUGIN_KEYS.has(key)) continue;
+        if (typeof rec[key] !== "function") continue;
+        let list = this.hookIndex.get(key);
+        if (!list) {
+          list = [];
+          this.hookIndex.set(key, list);
+        }
+        list.push(plugin);
+      }
+    }
+  }
+
+  /**
    * 安装插件
    *
    * 会解析插件依赖，按依赖顺序安装插件
@@ -393,6 +442,7 @@ export class PluginManager {
 
     // 更新状态
     this.pluginStates.set(name, "active");
+    this.rebuildHookIndex();
 
     // 触发激活事件
     this.eventEmitter.emit("plugin:activated", name, plugin);
@@ -424,6 +474,7 @@ export class PluginManager {
 
     // 更新状态
     this.pluginStates.set(name, "inactive");
+    this.rebuildHookIndex();
 
     // 触发停用事件
     this.eventEmitter.emit("plugin:deactivated", name, plugin);
@@ -458,6 +509,7 @@ export class PluginManager {
 
     // 更新状态
     this.pluginStates.set(name, "uninstalled");
+    this.rebuildHookIndex();
 
     // 触发卸载事件
     this.eventEmitter.emit("plugin:uninstalled", name, plugin);
@@ -510,6 +562,7 @@ export class PluginManager {
         // 重新注册插件
         this.plugins.set(plugin.name, plugin);
         this.pluginStates.set(plugin.name, "registered");
+        this.rebuildHookIndex();
 
         // 触发重新加载事件
         this.eventEmitter.emit("plugin:reloaded", plugin.name, plugin);
@@ -842,6 +895,7 @@ export class PluginManager {
     this.pluginServices.clear();
     this.pluginConfigs.clear();
     this.pluginErrors.clear();
+    this.hookIndex.clear();
     this.eventEmitter.removeAllListeners();
   }
 
@@ -876,7 +930,7 @@ export class PluginManager {
    * ```
    */
   async triggerInit(): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onInit");
     for (const plugin of activePlugins) {
       if (plugin.onInit) {
         try {
@@ -907,7 +961,7 @@ export class PluginManager {
    * ```
    */
   async triggerStart(): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onStart");
     for (const plugin of activePlugins) {
       if (plugin.onStart) {
         try {
@@ -938,7 +992,7 @@ export class PluginManager {
    * ```
    */
   async triggerStop(): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onStop");
     // 逆序执行，后启动的先停止
     for (const plugin of activePlugins.reverse()) {
       if (plugin.onStop) {
@@ -969,7 +1023,7 @@ export class PluginManager {
    * ```
    */
   async triggerShutdown(): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onShutdown");
     // 逆序执行
     for (const plugin of activePlugins.reverse()) {
       if (plugin.onShutdown) {
@@ -1006,7 +1060,7 @@ export class PluginManager {
    * ```
    */
   async triggerRequest(ctx: RequestContext): Promise<Response | undefined> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onRequest");
     for (const plugin of activePlugins) {
       if (plugin.onRequest) {
         try {
@@ -1044,7 +1098,7 @@ export class PluginManager {
    * ```
    */
   async triggerResponse(ctx: RequestContext): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onResponse");
     for (const plugin of activePlugins) {
       if (plugin.onResponse) {
         try {
@@ -1085,7 +1139,7 @@ export class PluginManager {
     error: Error,
     ctx?: RequestContext,
   ): Promise<Response | undefined> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onError");
     for (const plugin of activePlugins) {
       if (plugin.onError) {
         try {
@@ -1125,7 +1179,7 @@ export class PluginManager {
    */
   async triggerRoute(routes: RouteDefinition[]): Promise<RouteDefinition[]> {
     let currentRoutes = [...routes];
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onRoute");
     for (const plugin of activePlugins) {
       if (plugin.onRoute) {
         try {
@@ -1157,7 +1211,7 @@ export class PluginManager {
    * ```
    */
   async triggerBuild(options: BuildOptions): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onBuild");
     for (const plugin of activePlugins) {
       if (plugin.onBuild) {
         try {
@@ -1191,7 +1245,7 @@ export class PluginManager {
    * ```
    */
   async triggerBuildComplete(result: BuildResult): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onBuildComplete");
     for (const plugin of activePlugins) {
       if (plugin.onBuildComplete) {
         try {
@@ -1229,7 +1283,7 @@ export class PluginManager {
    * ```
    */
   async triggerSocket(ctx: SocketContext): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onSocket");
     for (const plugin of activePlugins) {
       if (plugin.onSocket) {
         try {
@@ -1267,7 +1321,7 @@ export class PluginManager {
    * ```
    */
   async triggerSocketClose(ctx: SocketContext): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onSocketClose");
     for (const plugin of activePlugins) {
       if (plugin.onSocketClose) {
         try {
@@ -1306,7 +1360,7 @@ export class PluginManager {
     > = {};
     let overallStatus: "healthy" | "unhealthy" | "degraded" = "healthy";
 
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onHealthCheck");
     for (const plugin of activePlugins) {
       if (plugin.onHealthCheck) {
         const startTime = Date.now();
@@ -1386,7 +1440,7 @@ export class PluginManager {
    * ```
    */
   async triggerHotReload(changedFiles: string[]): Promise<void> {
-    const activePlugins = this.getActivePlugins();
+    const activePlugins = this.getActivePluginsWithHook("onHotReload");
     for (const plugin of activePlugins) {
       if (plugin.onHotReload) {
         try {

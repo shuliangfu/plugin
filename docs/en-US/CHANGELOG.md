@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Performance
+
+- `PluginManager` now indexes active plugins per hook
+  (`getActivePluginsWithHook`), in registration order. The index is rebuilt on
+  register / activate / deactivate / uninstall / hot reload. `trigger*` methods
+  walk only plugins that implement the hook.
+
+### Changed
+
+- Dependencies: `@dreamer/runtime-adapter` `^1.2.2` → `^1.2.3`, `@dreamer/i18n`
+  `^1.1.2` → `^1.1.3`, `@dreamer/test` `^1.2.4` → `^1.2.5`. Package version
+  remains 1.1.0; not published to JSR.
+
 ## [1.1.0] - 2026-07-23
 
 ### Added
@@ -25,17 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   pattern as auth/payment/cache). 6 test files locked: loader, comprehensive,
   mod, config, load-directory, debug.
 - **`pathToFileURL` in loader.ts**: `src/loader.ts` now converts file paths to
-  `file://` URLs before dynamic `import()`. On Windows, bare paths like
-  `D:/...` are misinterpreted by Deno as URL scheme "d" ("Unsupported scheme")
-  and by Bun as unresolvable modules; `file:///D:/...` is the cross-runtime
-  standard for dynamic file imports.
-- **9-job CI matrix**: GitHub Actions workflow (`.github/workflows/ci.yml`)
-  with 3 Deno v2.9 + 3 Bun + 3 Node 22 jobs across Linux/macOS/Windows.
+  `file://` URLs before dynamic `import()`. On Windows, bare paths like `D:/...`
+  are misinterpreted by Deno as URL scheme "d" ("Unsupported scheme") and by Bun
+  as unresolvable modules; `file:///D:/...` is the cross-runtime standard for
+  dynamic file imports.
+- **9-job CI matrix**: GitHub Actions workflow (`.github/workflows/ci.yml`) with
+  3 Deno v2.9 + 3 Bun + 3 Node 22 jobs across Linux/macOS/Windows.
   `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` for early Node 24 validation.
 - **Project-local temp directory for tests**: `tests/_test-helpers.ts` exports
-  `PLUGIN_TMP_DIR` (project-internal `tests/_tmp_plugins/`) to avoid Bun's
-  macOS dynamic-import failure on system temp paths (`/var/folders/.../T/`
-  → `/private/var/...` symlink resolution breaks subsequent imports).
+  `PLUGIN_TMP_DIR` (project-internal `tests/_tmp_plugins/`) to avoid Bun's macOS
+  dynamic-import failure on system temp paths (`/var/folders/.../T/` →
+  `/private/var/...` symlink resolution breaks subsequent imports).
 
 ### Changed
 
@@ -51,8 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Bun dynamic import of temp files**: On macOS, Bun resolves `/var` →
   `/private/var` symlink when dynamically importing temp plugin files from the
   system temp directory. The first import succeeds but subsequent imports of
-  different temp files fail with "Cannot find module '/private/var/...'".
-  Fixed by creating temp files inside the project directory tree
+  different temp files fail with "Cannot find module '/private/var/...'". Fixed
+  by creating temp files inside the project directory tree
   (`tests/_tmp_plugins/`) instead of the system temp dir.
 - **CI locale assertions**: 6 test files (loader, comprehensive, mod, config,
   load-directory, debug) now lock `setPluginLocale("zh-CN")` to ensure Chinese

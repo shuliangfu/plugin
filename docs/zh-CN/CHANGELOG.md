@@ -8,12 +8,25 @@
 
 ---
 
+## [Unreleased]
+
+### 性能
+
+- `PluginManager`
+  为各钩子预建已激活插件索引（`getActivePluginsWithHook`），按注册顺序返回；注册
+  / 激活 / 停用 / 卸载 / 热更新时重建。`trigger*` 只遍历实现了该钩子的插件。
+
+### 变更
+
+- 依赖：`@dreamer/runtime-adapter` `^1.2.2` → `^1.2.3`，`@dreamer/i18n` `^1.1.2`
+  → `^1.1.3`，`@dreamer/test` `^1.2.4` → `^1.2.5`。包版本仍为 1.1.0，未发 JSR。
+
 ## [1.1.0] - 2026-07-23
 
 ### 新增
 
-- **Node.js 22+ 兼容**：完整支持 Deno、Bun、Node.js 22+ 三端运行。插件系统
-  通过 `tsx` 进行 TypeScript 转译，在 Node.js 上原生运行。新增 `package.json`
+- **Node.js 22+ 兼容**：完整支持 Deno、Bun、Node.js 22+ 三端运行。插件系统 通过
+  `tsx` 进行 TypeScript 转译，在 Node.js 上原生运行。新增 `package.json`
   （`engines.node >= 22`、基于 tsx 的 `test:node` 脚本）与 `tsconfig.json`
   （Bundler 模块解析）。
 - **`setPluginLocale` 导出**：`src/i18n.ts` 新增显式锁定 i18n locale 的导出
@@ -25,8 +38,8 @@
   路径转为 `file://` URL。Windows 上裸路径 `D:/...` 被 Deno 误解为 URL scheme
   "d"（"Unsupported scheme"），Bun 也无法解析；`file:///D:/...` 是三端跨平台
   动态 import 文件的标准方式。
-- **9 作业 CI 矩阵**：GitHub Actions 工作流（`.github/workflows/ci.yml`），
-  3 Deno v2.9 + 3 Bun + 3 Node 22，跨 Linux/macOS/Windows。
+- **9 作业 CI 矩阵**：GitHub Actions 工作流（`.github/workflows/ci.yml`）， 3
+  Deno v2.9 + 3 Bun + 3 Node 22，跨 Linux/macOS/Windows。
   `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` 提前验证 Node 24。
 - **项目内测试临时目录**：`tests/_test-helpers.ts` 导出 `PLUGIN_TMP_DIR`
   （项目内 `tests/_tmp_plugins/`），规避 Bun 在 macOS 上对系统 temp 路径
@@ -35,9 +48,9 @@
 
 ### 变更
 
-- **依赖升级**：`@dreamer/i18n` ^1.0.1 → ^1.1.2、`@dreamer/service`
-  ^1.0.2 → ^1.1.0、`@dreamer/runtime-adapter` ^1.0.18 → ^1.2.2、
-  `@dreamer/test` ^1.0.10 → ^1.2.3。所有依赖均已支持 Node.js 22+。
+- **依赖升级**：`@dreamer/i18n` ^1.0.1 → ^1.1.2、`@dreamer/service` ^1.0.2 →
+  ^1.1.0、`@dreamer/runtime-adapter` ^1.0.18 → ^1.2.2、 `@dreamer/test` ^1.0.10
+  → ^1.2.3。所有依赖均已支持 Node.js 22+。
 - **deno.json tasks**：新增 `test`、`test:node`、`check`、`lint`、`fmt` 任务。
   `minimumDependencyAge: 0` 加速迭代。
 - **`.gitignore`**：新增 `package-lock.json` 与 `tests/_tmp_plugins/`。

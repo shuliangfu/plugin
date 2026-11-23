@@ -34,17 +34,17 @@
     }
   },
   "tasks": {
-    "test": "deno test -A tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts",
-    "test:node": "tsx --tsconfig tsconfig.json --test --test-force-exit tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts",
+    "test": "deno test -A tests/hook-index.test.ts tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts",
+    "test:node": "tsx --tsconfig tsconfig.json --test --test-force-exit tests/hook-index.test.ts tests/app-events.test.ts tests/comprehensive.test.ts tests/config.test.ts tests/debug.test.ts tests/dispose.test.ts tests/error-isolation.test.ts tests/event-emitter.test.ts tests/hot-reload.test.ts tests/load-directory.test.ts tests/loader.test.ts tests/mod.test.ts tests/resource-limits.test.ts",
     "check": "deno check src/mod.ts",
     "lint": "deno lint src/",
     "fmt": "deno fmt src/ tests/"
   },
   "imports": {
-    "@dreamer/i18n": "jsr:@dreamer/i18n@^1.1.2",
+    "@dreamer/i18n": "jsr:@dreamer/i18n@^1.1.3",
     "@dreamer/service": "jsr:@dreamer/service@^1.1.0",
-    "@dreamer/runtime-adapter": "jsr:@dreamer/runtime-adapter@^1.2.2",
-    "@dreamer/test": "jsr:@dreamer/test@^1.2.4"
+    "@dreamer/runtime-adapter": "jsr:@dreamer/runtime-adapter@^1.2.3",
+    "@dreamer/test": "jsr:@dreamer/test@^1.2.5"
   },
   "minimumDependencyAge": 0,
   "nodeModulesDir": "auto"
